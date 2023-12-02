@@ -17,26 +17,27 @@ def split_row_in_id_and_values(data):
     game_data = {}
     for row in data:
         game_id = int(row.replace("Game ", "").split(":")[0])
-        game_data[game_id] = []
-        games = row.split(": ")[1].split("; ")
-        for game in games:
-            tmp_dict = {}
-            for num in game.split(", "):
-                num_color_pair = num.split(" ")
-                tmp_dict[num_color_pair[1]] = int(num_color_pair[0])
-            game_data[game_id].append(tmp_dict)
+        game_values = row.split(": ")[1].replace(",", "").replace(";", "").split(" ")
+        nums = [int(num) for num in game_values[0::2]]
+        colors = game_values[1::2]
+        tmp_dict = {}
+        for color, num in zip(colors, nums):
+            if color not in tmp_dict:
+                tmp_dict[color] = num
+            else:
+                if tmp_dict[color] < num:
+                    tmp_dict[color] = num
+        mult = 1
+        for num in tmp_dict.values():
+            mult *= num
+        game_data[game_id] = mult
+
     return game_data
 
 
 total_sum = 0
 
-for game_id, game_values in split_row_in_id_and_values(input_list).items():
-    to_add = True
-    for game in game_values:
-        for color, num in values.items():
-            if values[color] < game.get(color, -1):
-                to_add = False
-    total_sum += game_id if to_add else 0
-
+for game_id, mult in split_row_in_id_and_values(input_list).items():
+    total_sum += mult
 
 print(total_sum)
