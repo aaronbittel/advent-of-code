@@ -1,7 +1,7 @@
 import re
 
 
-with open(r"C:\Users\AaronWork\Desktop\day1.txt", "r") as f:
+with open(r"day1.txt", "r") as f:
     words = [line.strip() for line in f.readlines()]
 
 # words = ["two1nine",
