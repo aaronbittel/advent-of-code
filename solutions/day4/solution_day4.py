@@ -24,6 +24,8 @@ def check_if_winning(winning_numbers, my_numbers):
     for index, lst in enumerate(my_numbers):
         count = 0
         for num in lst:
+            if num == "":
+                continue
             if num in winning_numbers[index]:
                 count += 1
         winning_count.append(count)
@@ -53,5 +55,39 @@ def solution(input_list):
     print(total_sum)
 
 
+def solution_2(input_list):
+    scratchcard_copies = {i: 1 for i in range(1, len(input_list) + 1)}
+    print(scratchcard_copies)
+
+    winning_numbers_list = []
+    my_numbers_list = []
+    for line in input_list:
+        numbers = line.split(": ")[1]
+        winning_numbers_string = numbers.split(" | ")[0]
+        my_numbers_string = numbers.split(" | ")[1]
+        # print(winning_numbers_string, my_numbers_string, sep="\t\t")
+
+        winning_numbers_list.append(winning_numbers_string.split(" "))
+        my_numbers_list.append(my_numbers_string.split(" "))
+
+    winning_count = check_if_winning(winning_numbers_list, my_numbers_list)
+    card_winning_count = {i: wins for i, wins in enumerate(winning_count, start=1)}
+    print(card_winning_count)
+
+    max_length = len(scratchcard_copies)
+
+    for card_no, card_wins in zip(scratchcard_copies, card_winning_count.values()):
+        print(card_no)
+        for _ in range(scratchcard_copies[card_no]):
+            for i in range(1, card_wins + 1):
+                if card_no + i > max_length:
+                    break
+                scratchcard_copies[card_no + i] += 1
+            # print(" -> ", scratchcard_copies)
+
+    print(sum(scratchcard_copies.values()))
+
+
 if __name__ == "__main__":
-    solution(input_file)
+    # solution(input_file)
+    solution_2(input_file)
