@@ -47,7 +47,8 @@ def solution(input_list):
     numbers = []
     for row_index, row in enumerate(input_list):
         for col_index, symbol in enumerate(row):
-            if symbol.isdigit() or symbol == ".":
+            tmp_numbers = []
+            if symbol != "*":
                 continue
             visited_cords = []
             for direction in DIRECTIONS:
@@ -75,8 +76,10 @@ def solution(input_list):
                     end += 1
                     visited_cords.append((row_to_look, end))
                 number = int(input_list[row_to_look][start : end + 1])
-                numbers.append(number)
+                tmp_numbers.append(number)
                 print(f"{symbol} -> {number}")
+            if len(tmp_numbers) == 2:
+                numbers.append(tmp_numbers[0] * tmp_numbers[1])
     return numbers
 
 
