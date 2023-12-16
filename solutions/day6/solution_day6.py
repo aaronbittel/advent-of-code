@@ -31,6 +31,9 @@ def solve_part2(p):
     time_, distance = [list(re.findall("\\d+", part)) for part in p]
     time_, distance = int("".join(time_)), int("".join(distance))
     possibilities = 0
+    # x * (a - x) == -x^2 + ax (parabola with maximum at a // 2)
+    # go from max to -1 to left side while y > distance: increase possibilities
+    # return possibilities * 2 (because of symmetry) and add 1 for max
     for t in range((time_ // 2) - 1, 0, -1):
         if t * (time_ - t) > distance:
             possibilities += 1
