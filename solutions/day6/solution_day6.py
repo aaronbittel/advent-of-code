@@ -30,7 +30,12 @@ def solve_part1(p):
 def solve_part2(p):
     time_, distance = [list(re.findall("\\d+", part)) for part in p]
     time_, distance = int("".join(time_)), int("".join(distance))
-    return sum(1 for i in range(1, time_) if i * (time_ - i) > distance)
+    possibilities = 0
+    for t in range((time_ // 2) - 1, 0, -1):
+        if t * (time_ - t) > distance:
+            possibilities += 1
+        else:
+            return possibilities * 2 + 1
 
 
 if __name__ == "__main__":
