@@ -11,7 +11,7 @@ def load(file):
 
 
 def solve(p):
-    seeds = [int(seed) for seed in p[0].split(" ")[1:]]
+    seeds_part1 = [int(seed) for seed in p[0].split(" ")[1:]]
     sections = []
     index = -1
     for row in p[1:]:
@@ -21,7 +21,7 @@ def solve(p):
         else:
             sections[index].append(mapper(*(map(int, row.split(" ")))))
 
-    return min(seed_conversion(seed, sections) for seed in seeds)
+    return min(seed_conversion(seed, sections) for seed in seeds_part1)
 
 
 def seed_conversion(seed, sections):
