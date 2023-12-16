@@ -1,4 +1,4 @@
-with open("puzzle_input_day2", "r") as f:
+with open("puzzle_input_day2.txt", "r") as f:
     input_list = [row.strip() for row in f.readlines()]
 
 

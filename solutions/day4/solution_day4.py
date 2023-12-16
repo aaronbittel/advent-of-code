@@ -1,4 +1,4 @@
-with open("puzzle_input_day4", "r") as f:
+with open("puzzle_input_day4.txt", "r") as f:
     input_file = [line.strip() for line in f.readlines()]
 
 
