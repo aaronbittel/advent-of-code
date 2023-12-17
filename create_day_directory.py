@@ -33,5 +33,10 @@ if __name__ == "__main__":
     day_number = sys.argv[1]
 
     directory_name = create_directory(day_number)
+
+    if os.path.exists(directory_name):
+        print(f"Directory {directory_name} already exists.")
+        sys.exit(1)
+
     copy_template(directory_name, day_number)
     create_empty_txt_file(directory_name, file_name=f"puzzle_input_day{day_number}.txt")
