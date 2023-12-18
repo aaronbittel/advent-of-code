@@ -14,10 +14,7 @@ def solve(p):
     part1 = 0
     histories = [list(map(int, row.split())) for row in p]
 
-    sol = (sum(get_next_number(sequence) for sequence in histories))
-
     for history in histories:
-
         adds = []
         diff = history
         logging.debug(history)
@@ -29,22 +26,7 @@ def solve(p):
         logging.debug("-" * 20)
         part1 += sum(adds)
 
-    if sol != part1:
-        print(sol, part1)
-        print("incorrect")
-        return
-    else:
-        print(sol, part1)
-        print("correct")
-
     return part1
-
-
-def get_next_number(sequence):
-    if len(set(sequence)) == 1:
-        return sequence[0]
-    next_number = get_next_number([b - a for a, b in zip(sequence, sequence[1:])])
-    return sequence[-1] + next_number
 
 
 if __name__ == "__main__":
