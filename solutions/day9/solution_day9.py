@@ -1,5 +1,8 @@
 import time
 from functools import reduce
+import logging
+
+logging.basicConfig(level=logging.DEBUG)
 
 
 def load(file):
@@ -10,21 +13,38 @@ def load(file):
 def solve(p):
     part1 = 0
     histories = [list(map(int, row.split())) for row in p]
+
+    sol = (sum(get_next_number(sequence) for sequence in histories))
+
     for history in histories:
+
         adds = []
         diff = history
-        # print(history)
-        should_add = True
-        while sum(diff) != 0:
-            if len(diff) == 1 and diff[0] != 0:
-                should_add = False
+        logging.debug(history)
+        while not all(num == 0 for num in diff):
             adds.append(diff[-1])
-            diff = [abs(left - right) for left, right in zip(diff, diff[1:])]
-            # print(diff, "Sum: ", sum(diff))
-        # print(adds)
-        # print("-" * 20)
-        part1 += reduce(lambda x, y: x + y, adds) if should_add else 0
+            diff = [right - left for left, right in zip(diff, diff[1:])]
+            logging.debug(f"{diff} Sum: {sum(diff)}")
+        logging.debug(adds)
+        logging.debug("-" * 20)
+        part1 += sum(adds)
+
+    if sol != part1:
+        print(sol, part1)
+        print("incorrect")
+        return
+    else:
+        print(sol, part1)
+        print("correct")
+
     return part1
+
+
+def get_next_number(sequence):
+    if len(set(sequence)) == 1:
+        return sequence[0]
+    next_number = get_next_number([b - a for a, b in zip(sequence, sequence[1:])])
+    return sequence[-1] + next_number
 
 
 if __name__ == "__main__":
