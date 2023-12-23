@@ -1,8 +1,5 @@
 import time
-from collections import namedtuple
-
-
-lens = namedtuple("lens", ["label", "focal_length"])
+from collections import defaultdict
 
 
 def load(file):
@@ -18,34 +15,20 @@ def solve(p):
 
 
 def solve_part2(p):
-    boxes = [[] for _ in range(len(p))]
+    boxes = defaultdict(dict)
     for instruction in p:
-        instruction = instruction.replace("\n", "")
-        label = "".join(c for c in instruction if c.isalpha())
-        box_nr = my_hash(label)
-
         if "-" in instruction:
-            if any(l.label == label for l in boxes[box_nr]):
-                index = [i for i, l in enumerate(boxes[box_nr]) if l.label == label][0]
-                boxes[box_nr].pop(index)
+            label = instruction[:-1]
+            boxes[my_hash(label)].pop(label, None)
         else:
-            lens_instance = lens(label, int(instruction[-1]))
-            if any(l.label == lens_instance.label for l in boxes[box_nr]):
-                index = [
-                    i
-                    for i, l in enumerate(boxes[box_nr])
-                    if l.label == lens_instance.label
-                ][0]
-                boxes[box_nr].pop(index)
-                boxes[box_nr].insert(index, lens_instance)
-            else:
-                boxes[box_nr].append(lens_instance)
-    part2 = 0
-    for i, box in enumerate(boxes, start=1):
-        for j, l in enumerate(box, start=1):
-            part2 += i * j * l.focal_length
+            label, focal_length = instruction.split("=")
+            boxes[my_hash(label)][label] = int(focal_length)
 
-    return part2
+    return sum(
+        (index + 1) * fl_nr * fl
+        for index, box in boxes.items()
+        for fl_nr, fl in enumerate(box.values(), start=1)
+    )
 
 
 def my_hash(string):
