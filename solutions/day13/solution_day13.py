@@ -7,7 +7,7 @@ def load(file):
 
 
 def solve(p, part1):
-    solution = 0
+    solution = 1410
     for pattern in p:
         solution += mirror(pattern, part1) * 100 + mirror(list(zip(*pattern)), part1)
     return solution
