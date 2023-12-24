@@ -26,34 +26,35 @@ def load(file):
         return [[c for c in row.strip()] for row in f]
 
 
-def solve(p):
-    visited = set()
-    beam(p, visited, Point(-1, 0), RIGHT)
-    part1 = len(set(pos for pos, _ in visited))
-
-    energized_tiles = set()
-
-    for i in range(len(p[0])):
+def solve(p, part1):
+    if part1:
         visited = set()
-        beam(p, visited, Point(i, -1), DOWN)
-        energized_tiles.add(len(set(pos for pos, _ in visited)))
-        visited = set()
-        beam(p, visited, Point(i, len(p)), UP)
-        energized_tiles.add(len(set(pos for pos, _ in visited)))
+        beam(p, visited, Point(-1, 0), RIGHT)
+        return len(set(pos for pos, _ in visited))
+    else:
+        part2 = 0
 
-        print(f"#1: {(i + 1) / len(p[0]) * 100:2f} %")
+        for i in range(len(p[0])):
+            visited = set()
+            beam(p, visited, Point(i, -1), DOWN)
+            part2 = max(part2, (len(set(pos for pos, _ in visited))))
+            visited = set()
+            beam(p, visited, Point(i, len(p)), UP)
+            part2 = max(part2, (len(set(pos for pos, _ in visited))))
 
-    for i in range(len(p)):
-        visited = set()
-        beam(p, visited, Point(-1, i), RIGHT)
-        energized_tiles.add(len(set(pos for pos, _ in visited)))
-        visited = set()
-        beam(p, visited, Point(len(p[0]), i), LEFT)
-        energized_tiles.add(len(set(pos for pos, _ in visited)))
+            print(f"#1: {(i + 1) / len(p[0]) * 100:.2f} %")
 
-        print(f"#2: {(i + 1) / len(p) * 100:2f} %")
+        for i in range(len(p)):
+            visited = set()
+            beam(p, visited, Point(-1, i), RIGHT)
+            part2 = max(part2, (len(set(pos for pos, _ in visited))))
+            visited = set()
+            beam(p, visited, Point(len(p[0]), i), LEFT)
+            part2 = max(part2, (len(set(pos for pos, _ in visited))))
 
-    return part1, max(energized_tiles)
+            print(f"#2: {(i + 1) / len(p) * 100:.2f} %")
+
+        return part2
 
 
 def beam(
@@ -86,35 +87,17 @@ def beam(
                     beam(grid, visited, next_pos, RIGHT)
                     beam(grid, visited, next_pos, LEFT)
             case "/":
-                if direction == RIGHT:
-                    direction = UP
-                    next_pos += direction
-                elif direction == LEFT:
-                    direction = DOWN
-                    next_pos += direction
-                elif direction == UP:
-                    direction = RIGHT
-                    next_pos += direction
-                elif direction == DOWN:
-                    direction = LEFT
-                    next_pos += direction
+                direction = Point(-direction.y, -direction.x)
+                next_pos += direction
             case "\\":
-                if direction == RIGHT:
-                    direction = DOWN
-                    next_pos += direction
-                elif direction == LEFT:
-                    direction = UP
-                    next_pos += direction
-                elif direction == UP:
-                    direction = LEFT
-                    next_pos += direction
-                elif direction == DOWN:
-                    direction = RIGHT
-                    next_pos += direction
+                direction = Point(direction.y, direction.x)
+                next_pos += direction
 
 
 if __name__ == "__main__":
     time_start = time.perf_counter()
-    sol_part1, sol_part2 = solve(load("puzzle_input_day16.txt"))
+    puzzle = load("puzzle_input_day16.txt")
+    sol_part1 = solve(puzzle, True)
+    sol_part2 = solve(puzzle, False)
     print(f"Part 1: {sol_part1}, Part 2: {sol_part2}")
     print(f"Solved in {time.perf_counter() - time_start:.5f} Sec.")
