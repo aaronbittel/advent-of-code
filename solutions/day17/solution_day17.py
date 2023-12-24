@@ -14,11 +14,12 @@ def load(file):
 
 def solve(p):
     grid = {(x, y): int(c) for y, row in enumerate(p) for x, c in enumerate(row)}
-    part1 = path(max(grid), grid)
-    return part1
+    part1 = path(max(grid), grid, 1, 3)
+    part2 = path(max(grid), grid, 4, 10)
+    return part1, part2
 
 
-def path(target, grid):
+def path(target, grid, least, most):
     q, visited = [(0, (0, 0), (0, 0))], set()
 
     while q:
@@ -36,16 +37,18 @@ def path(target, grid):
         }:
             dx2, dy2 = dir2
             h = heat
-            for mul in range(1, 4):
+            for mul in range(1, most + 1):
                 pos2 = (x + dx2 * mul, y + dy2 * mul)
                 if pos2 not in grid:
                     break
                 h += grid[pos2]
+                if mul < least:
+                    continue
                 heapq.heappush(q, (h, pos2, dir2))
 
 
 if __name__ == "__main__":
     time_start = time.perf_counter()
-    solution = solve(load("puzzle_input_day17.txt"))
-    print(f"Part 1: {solution}")
+    sol_part1, sol_part2 = solve(load("puzzle_input_day17.txt"))
+    print(f"Part 1: {sol_part1}, Part 2: {sol_part2}")
     print(f"Solved in {time.perf_counter() - time_start:.5f} Sec.")
