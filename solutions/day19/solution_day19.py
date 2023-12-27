@@ -1,4 +1,5 @@
 import time
+import math
 from collections import defaultdict
 
 
@@ -49,7 +50,32 @@ def solve(p):
             if curr == "R":
                 break
 
-    return part1
+    ranges = {c: (1, 4000) for c in "xmas"}
+    return part1, comb(workflows, ranges)
+
+
+def comb(wfs, ranges, curr_wf="in"):
+    if curr_wf == "A":
+        return math.prod((high - low + 1) for low, high in ranges.values())
+    if curr_wf == "R":
+        return 0
+
+    total = 0
+    for con, target in wfs[curr_wf]:
+        if not con:
+            total += comb(wfs, ranges, target)
+        else:
+            var, op, num = con
+            new_ranges = dict(ranges)
+            low, high = ranges[var]
+            if op == "<":
+                new_ranges[var] = (low, num - 1)
+                ranges[var] = (num, high)
+            else:
+                new_ranges[var] = (num + 1, high)
+                ranges[var] = (low, num)
+            total += comb(wfs, new_ranges, target)
+    return total
 
 
 if __name__ == "__main__":
