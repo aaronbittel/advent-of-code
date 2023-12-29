@@ -1,8 +1,15 @@
 import time
 import logging
+import math
 from enum import Enum
 from abc import ABC
 
+
+"""
+part2:
+    goal: rx low pulse
+    -> dt (only connection, Conjunction Module) needs all modules connected to dt to last sent a HIGH
+"""
 
 logging.basicConfig(level=logging.INFO)
 
@@ -88,14 +95,10 @@ def parse(p):
     for untyped_module in untyped_module_names:
         config[untyped_module] = Untyped(untyped_module)
 
-    # for name, module in config.items():
-    #     print(name, module)
     return config
 
 
-def iteration(config):
-    # if any(Counter(config) == Counter(c) for c in cache):
-    #     return cache[config]
+def iteration(config, part2, it):
     low_pulses, high_pulses = 0, 0
     q = [(config["broadcaster"], Pulse.LOW)]
     conjunction_queue = []
@@ -123,7 +126,10 @@ def iteration(config):
                     q.append((config[conn], Pulse.LOW))
                     logging.debug(f"{module.name} -{Pulse.LOW}-> {conn}")
         elif isinstance(module, Conjunction):
-            module.connection_history[conjunction_queue.pop(0)] = pulse
+            item = conjunction_queue.pop(0)
+            if module.name == "dt" and pulse == Pulse.HIGH and part2[item] == 0:
+                part2[item] = it
+            module.connection_history[item] = pulse
             if all(pulse == Pulse.HIGH for pulse in module.connection_history.values()):
                 for conn in module.connections:
                     q.append((config[conn], Pulse.LOW))
@@ -140,24 +146,33 @@ def iteration(config):
             if isinstance(config[conn], Conjunction):
                 conjunction_queue.append(module.name)
 
-    # cache[Counter(config)] = (low_pulses, high_pulses)
-    # print(cache)
-    return low_pulses, high_pulses
+    if not part2:
+        return low_pulses, high_pulses
 
 
-def solve(p):
+def solve(p, part2):
     config = parse(p)
-    low_pulses_count = high_pulses_count = 0
-    # cache = {}
-    for _ in range(1000):
-        low_pulses, high_pulses = iteration(config)
-        low_pulses_count += low_pulses
-        high_pulses_count += high_pulses
-    return low_pulses_count * high_pulses_count
+    if not part2:
+        low_pulses_count = high_pulses_count = 0
+        for _ in range(1):
+            low_pulses, high_pulses = iteration(config, {}, 0)
+            low_pulses_count += low_pulses
+            high_pulses_count += high_pulses
+        return low_pulses_count * high_pulses_count
+    else:
+        index = 1
+        part2 = {name: 0 for name in ["ks", "pm", "dl", "vk"]}
+        while any(val == 0 for val in part2.values()):
+            iteration(config, part2, index)
+            index += 1
+        return math.lcm(*(part2.values()))
 
 
 if __name__ == "__main__":
     time_start = time.perf_counter()
-    solution = solve(load("puzzle_input_day20.txt"))
-    print(f"Part 1: {solution}")
+    puzzle = load("puzzle_input_day20.txt")
+    # sol_part1 = solve(puzzle, False)
+    sol_part2 = solve(puzzle, True)
+    # print(f"Part 1: {sol_part1}")
+    print(f"Part 2: {sol_part2}")
     print(f"Solved in {time.perf_counter() - time_start:.5f} Sec.")
