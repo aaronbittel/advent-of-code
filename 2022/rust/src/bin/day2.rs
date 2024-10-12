@@ -1,3 +1,12 @@
+use std::error::Error;
+
+fn main() -> Result<(), Box<dyn Error>> {
+    println!("Part1: {}", part1("./data/input2.txt")?);
+    println!("Part2: {}", part2("./data/input2.txt")?);
+
+    Ok(())
+}
+
 #[derive(Debug, PartialEq, Clone)]
 enum Move {
     Rock = 1,
@@ -55,9 +64,10 @@ impl Move {
     }
 }
 
-pub fn part1(input: &str) -> u32 {
+pub fn part1(path: &str) -> Result<u32, Box<dyn Error>> {
+    let input = aoc::read_one_per_line::<String>(path)?;
     input
-        .lines()
+        .into_iter()
         .map(|line| {
             line.split_whitespace()
                 .map(Move::from)
@@ -68,22 +78,20 @@ pub fn part1(input: &str) -> u32 {
             let me = &game[1];
             (me.play(opp) as u32) + (me.clone() as u32)
         })
-        .fold(0, |acc, x| acc + x)
+        .fold(Ok(0), |acc, x| Ok(acc.unwrap() + x))
 }
 
-pub fn part2(input: &str) -> u32 {
-    let lines: Vec<&str> = input.lines().collect();
-
+pub fn part2(path: &str) -> Result<u32, Box<dyn Error>> {
     let mut result: u32 = 0;
 
-    for line in lines {
+    for line in aoc::read_one_per_line::<String>(path)? {
         let parts: Vec<&str> = line.split_whitespace().collect();
         let opp = Move::from(parts[0]);
         let outcome = Outcome::from(parts[1]);
         let me = what_to_play(&opp, &outcome);
         result += (outcome as u32) + (me as u32);
     }
-    result
+    Ok(result)
 }
 
 fn what_to_play(opp: &Move, outcome: &Outcome) -> Move {
@@ -102,25 +110,17 @@ fn what_to_play(opp: &Move, outcome: &Outcome) -> Move {
     }
 }
 
-fn example_input() -> String {
-    "\
-A Y
-B X
-C Z"
-    .to_string()
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn part1_test() {
-        assert_eq!(15, part1(&example_input()));
+        assert_eq!(15, part1("./data/example2.txt").unwrap())
     }
 
     #[test]
     fn part2_test() {
-        assert_eq!(12, part2(&example_input()));
+        assert_eq!(12, part2("./data/example2.txt").unwrap())
     }
 }

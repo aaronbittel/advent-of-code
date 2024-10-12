@@ -1,9 +1,16 @@
-use std::ops::RangeInclusive;
+use std::error::Error;
+
+fn main() -> Result<(), Box<dyn Error>> {
+    println!("Part1: {}", part1("./data/input4.txt")?);
+    println!("Part2: {}", part2("./data/input4.txt")?);
+
+    Ok(())
+}
 
 // dont know what is better: filter or filter_map
-pub fn part1(input: &str) -> u32 {
-    input
-        .lines()
+pub fn part1(path: &str) -> Result<u32, Box<dyn Error>> {
+    Ok(aoc::read_one_per_line::<String>(path)?
+        .into_iter()
         .filter_map(|line| {
             let (first, second) = line.split_once(',').expect("I expect a comma");
             let (start1, end1) = parse_range(first);
@@ -14,16 +21,16 @@ pub fn part1(input: &str) -> u32 {
                 None
             }
         })
-        .sum()
+        .sum())
 }
 
 fn contains(start1: u32, end1: u32, start2: u32, end2: u32) -> bool {
     (start1 <= start2 && end1 >= end2) || (start2 <= start1 && end2 >= end1)
 }
 
-pub fn part2(input: &str) -> u32 {
-    input
-        .lines()
+pub fn part2(path: &str) -> Result<u32, Box<dyn Error>> {
+    Ok(aoc::read_one_per_line::<String>(path)?
+        .into_iter()
         .map(|line| {
             let (first, second) = line.split_once(',').expect("I expect a comma");
             let (start1, end1) = parse_range(first);
@@ -31,7 +38,7 @@ pub fn part2(input: &str) -> u32 {
             overlap(start1, end1, start2, end2)
         })
         .filter(|v| *v)
-        .count() as u32
+        .count() as u32)
 }
 
 fn overlap(start1: u32, end1: u32, start2: u32, end2: u32) -> bool {
@@ -52,22 +59,11 @@ mod tests {
 
     #[test]
     fn test_part1() {
-        assert_eq!(2, part1(&example_input()))
+        assert_eq!(2, part1("./data/example4.txt").unwrap())
     }
 
     #[test]
     fn test_part2() {
-        assert_eq!(4, part2(&example_input()))
+        assert_eq!(4, part2("./data/example4.txt").unwrap())
     }
-}
-
-fn example_input() -> String {
-    "\
-2-4,6-8
-2-3,4-5
-5-7,7-9
-2-8,3-7
-6-6,4-6
-2-6,4-8"
-        .to_string()
 }

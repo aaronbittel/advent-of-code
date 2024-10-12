@@ -1,4 +1,12 @@
 use std::collections::HashSet;
+use std::error::Error;
+
+fn main() -> Result<(), Box<dyn Error>> {
+    println!("Part1: {}", part1("./data/input3.txt")?);
+    println!("Part2: {}", part2("./data/input3.txt")?);
+
+    Ok(())
+}
 
 trait Priority {
     fn priority(&self) -> u8;
@@ -14,9 +22,9 @@ impl Priority for char {
     }
 }
 
-pub fn part1(input: &str) -> u32 {
-    input
-        .lines()
+pub fn part1(path: &str) -> Result<u32, Box<dyn Error>> {
+    Ok(aoc::read_one_per_line::<String>(path)?
+        .into_iter()
         .map(|line| {
             let mid = line.len() / 2;
             let first = &line[..mid];
@@ -28,13 +36,11 @@ pub fn part1(input: &str) -> u32 {
                 .expect("every line should have a common character")
                 .priority() as u32
         })
-        .sum()
+        .sum())
 }
 
-pub fn part2(input: &str) -> u32 {
-    input
-        .lines()
-        .collect::<Vec<&str>>()
+pub fn part2(path: &str) -> Result<u32, Box<dyn Error>> {
+    Ok(aoc::read_one_per_line::<String>(path)?
         .chunks(3)
         .map(|group| {
             let common = group
@@ -49,7 +55,7 @@ pub fn part2(input: &str) -> u32 {
                 .expect("There should be 1 common")
                 .priority() as u32
         })
-        .sum()
+        .sum())
 }
 
 #[cfg(test)]
@@ -58,22 +64,11 @@ mod tests {
 
     #[test]
     fn test_part1() {
-        assert_eq!(157, part1(&example_input()))
+        assert_eq!(157, part1("./data/example3.txt").unwrap())
     }
 
     #[test]
     fn test_part2() {
-        assert_eq!(70, part2(&example_input()))
+        assert_eq!(70, part2("./data/example3.txt").unwrap())
     }
-}
-
-fn example_input() -> String {
-    "\
-vJrwpWtwJgWrhcsFMMfFFhFp
-jqHRNqRjqzjGDLGLrsFMfFZSrLrFZsSL
-PmmdzqPrVvPwwTWBwg
-wMqvLMZHhHMvwLHjbvcjnnSBnvTQFn
-ttgJtRGJQctTZtZT
-CrZsJsPPZsGzwwsLwLmpwMDw"
-        .to_string()
 }
