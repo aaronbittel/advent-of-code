@@ -34,5 +34,7 @@ defmodule Day1 do
 end
 
 [left, right] = Day1.parse("day1.txt")
-IO.puts("Part1: #{Day1.part1(left, right)}")
-IO.puts("Part2: #{Day1.part2(left, right)}")
+{took, result} = :timer.tc(fn -> Day1.part1(left, right) end)
+IO.puts("Part1: #{result}, took: #{took} ms")
+{took, result} = :timer.tc(fn -> Day1.part2(left, right) end)
+IO.puts("Part2: #{result}, took: #{took} ms")
