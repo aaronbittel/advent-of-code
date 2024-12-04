@@ -42,27 +42,25 @@ def process_part(matrix, symbol, pattern=None):
     return result
 
 
-def read_input(filename: str, search: str) -> dict:
+def parse(filename: str) -> dict:
     with open(filename) as f:
         return {
             (row, col): char
             for row, line in enumerate(f)
             for col, char in enumerate(line.strip())
-            if char in search
         }
 
 
 def main():
-    matrix_xmas = read_input("./input.txt", "XMAS")
-    matrix_mas = read_input("./input.txt", "MAS")
+    matrix = parse("./input.txt")
 
     start = time.perf_counter()
-    p1 = process_part(matrix_xmas, "X", pattern="MAS")
+    p1 = process_part(matrix, "X", pattern="MAS")
     end = time.perf_counter()
     print(f"Part1: {p1}, took: {end - start:.5f}s")
 
     start = time.perf_counter()
-    p2 = process_part(matrix_mas, "A")
+    p2 = process_part(matrix, "A")
     end = time.perf_counter()
     print(f"Part2: {p2}, took: {end - start:.5f}s")
 
