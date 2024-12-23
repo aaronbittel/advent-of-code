@@ -3,13 +3,12 @@ defmodule Day18 do
     @test_count 12
     @input_count 1024
 
-    @type dir() :: {integer(), integer()}
+    @type pos() :: {integer(), integer()}
 
-    @spec parse(String.t(), integer()) :: [dir()]
-    def parse(filename, count) do
+    @spec parse(String.t()) :: [pos()]
+    def parse(filename) do
         filename
         |> File.stream!()
-        |> Stream.take(count)
         |> Stream.map(fn line ->
             line
             |> String.trim()
@@ -17,17 +16,16 @@ defmodule Day18 do
             |> Enum.map(&String.to_integer/1)
             |> List.to_tuple()
         end)
-        |> MapSet.new()
     end
 
-    def part1(obstacles, is_input) do
+    @spec part1([pos()], integer(), boolean()) :: integer()
+    def part1(obstacles, count, is_input) do
+        obstacles = obstacles
+            |> Enum.take(count)
+            |> MapSet.new()
+
         start = {0, 0}
         goal = if is_input, do: {70, 70}, else: {6, 6}
-
-        IO.puts("Calling with goal = (#{elem(goal, 0)}, #{elem(goal, 1)})")
-        IO.puts("#obstacles: #{Enum.count(obstacles)}")
-
-        show(obstacles)
 
         queue = [{start, 0}]
         visited = MapSet.new([start])
@@ -35,8 +33,8 @@ defmodule Day18 do
         bfs(queue, visited, goal, obstacles, is_input)
     end
 
+    @spec bfs([{pos(), integer()}], MapSet.t(pos()), pos(), MapSet.t(pos()), boolean()) :: integer()
     def bfs([{current, steps} | rest], visited, goal, obstacles, is_input) do
-        # IO.puts("#{elem(current, 0)}, #{elem(current, 1)}: #{steps}")
         if current == goal do
             steps
         else
@@ -47,9 +45,6 @@ defmodule Day18 do
 
             valid_positions = next_positions
                 |> Enum.filter(fn {x, y} -> valid_position?({x, y}, obstacles, visited, is_input) end)
-
-            # valid_positions
-            # |> Enum.each(fn pos -> IO.puts("X=#{elem(pos, 0)}, Y=#{elem(pos, 1)}") end)
 
             new_visited = Enum.reduce(valid_positions, visited, &MapSet.put(&2, &1))
             new_queue = rest ++ Enum.map(valid_positions, &{&1, steps + 1})
@@ -65,14 +60,68 @@ defmodule Day18 do
             not MapSet.member?(visited, {x, y})
     end
 
-    @spec show(MapSet.t()) :: nil
-    defp show(obstacles) do
-        for y <- 0..6 do
-            for x <- 0..6 do
-                char = if MapSet.member?(obstacles, {x, y}), do: "#", else: "."
-                IO.write(char)
+    @spec show([pos()], MapSet.t(pos())) :: nil
+    defp show(obstacles, path, hl \\ {-1, -1}) do
+        obstacles = MapSet.new(obstacles)
+        for y <- 0..70 do
+            for x <- 0..70 do
+                cond do
+                    {x, y} == hl -> IO.ANSI.green() <> "H" <> IO.ANSI.reset()
+                    MapSet.member?(obstacles, {x, y}) -> "#"
+                    MapSet.member?(path, {x, y}) -> IO.ANSI.blue() <> "O" <> IO.ANSI.reset()
+                    true -> "."
+                end
+                |> IO.write()
             end
             IO.puts("")
+        end
+        IO.puts("")
+    end
+
+    def part2(obstacles, count, is_input) do
+        {first_list, second_list} = obstacles |> Enum.split(count)
+        first = MapSet.new(first_list)
+
+        start = {0, 0}
+        goal = if is_input, do: {70, 70}, else: {6, 6}
+        queue = [{start, [start]}]
+        visited = MapSet.new([start])
+
+        path = find_path(queue, visited, goal, first, is_input)
+
+        second_list
+            |> Enum.reduce_while({first, path}, fn obstacle, {all_obstacles, current_path} ->
+                all_obstacles = MapSet.put(all_obstacles, obstacle)
+
+                if not MapSet.member?(current_path, obstacle) do
+                    {:cont, {all_obstacles, current_path}}
+                else
+                    case find_path(queue, visited, goal, all_obstacles, is_input) do
+                        :no_path -> {:halt, obstacle}
+                        new_path -> {:cont, {all_obstacles, new_path}}
+                    end
+                end
+            end)
+    end
+
+    defp find_path([], _, _, _, _), do: :no_path
+    defp find_path([{current, path} | rest], visited, goal, obstacles, is_input) do
+        if current == goal do
+            MapSet.new(path)
+        else
+            next_positions = for {dx, dy} <- @directions do
+                {x, y} = current
+                {x + dx, y + dy}
+            end
+
+            valid_positions = next_positions
+                |> Enum.filter(fn {x, y} -> valid_position?({x, y}, obstacles, visited, is_input) end)
+
+
+            new_visited = Enum.reduce(valid_positions, visited, &MapSet.put(&2, &1))
+            new_queue = rest ++ Enum.map(valid_positions, &{&1, path ++ [&1]})
+
+            find_path(new_queue, new_visited, goal, obstacles, is_input)
         end
     end
 
@@ -84,13 +133,13 @@ defmodule Day18 do
             {@input_count, true}
         end
 
-        obstacles = parse(filename, count)
+        obstacles = parse(filename)
 
-        {took, result} = :timer.tc(fn -> part1(obstacles, is_input) end)
+        {took, result} = :timer.tc(fn -> part1(obstacles, count, is_input) end)
         IO.puts("Part1: #{result}, took: #{took / 1_000_000} seconds")
 
-        # {took, result} = :timer.tc(fn -> part2(robots, size) end)
-        # IO.puts("Part2: #{result}, took: #{took / 1_000_000} seconds")
+        {took, result} = :timer.tc(fn -> part2(obstacles, count, is_input) end)
+        IO.puts("Part2: \"#{elem(result, 0)},#{elem(result, 1)}\", took: #{took / 1_000_000} seconds")
     end
 end
 
