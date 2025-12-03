@@ -42,8 +42,8 @@ defmodule Day11 do
 
     @spec evolve_n([String.t()], integer) :: [String.t()]
     defp evolve_n(nums, n) do
-        IO.puts("Run: #{n}")
         nums
+        |> IO.inspect()
         |> evolve()
         |> evolve_n(n-1)
     end
@@ -61,4 +61,4 @@ defmodule Day11 do
 
 end
 
-Day11.solve("./input.txt")
+Day11.part1(["0"], 75)

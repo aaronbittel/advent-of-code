@@ -1,6 +1,6 @@
 defmodule Day2 do
 
-    @spec is_safe([integer], atom | nil) :: boolean
+    @spec is_safe([integer()], atom() | nil) :: boolean()
     defp is_safe(numbers, dir \\ nil) do
         dir = if dir == nil do
             [first, second | _] = numbers
@@ -22,12 +22,12 @@ defmodule Day2 do
     end
 
 
-    @spec exclude_indices([integer]) :: [[interger]]
+    @spec exclude_indices([integer()]) :: [[integer()]]
     defp exclude_indices(list) do
         for i <- 0..(length(list) - 1), do: List.delete_at(list, i)
     end
 
-    @spec part1(String.t()) :: integer
+    @spec part1(String.t()) :: integer()
     def part1(filename) do
         File.stream!(filename)
         |> Stream.map(fn line ->
@@ -38,7 +38,7 @@ defmodule Day2 do
         |> Enum.count()
     end
 
-    @spec part2(String.t()) :: integer
+    @spec part2(String.t()) :: integer()
     def part2(filename) do
         File.stream!(filename)
         |> Stream.map(fn line ->

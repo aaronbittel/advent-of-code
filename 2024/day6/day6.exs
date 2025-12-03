@@ -26,14 +26,15 @@ defmodule Day6 do
         {elem(pos, 0) + elem(dir, 0), elem(pos, 1) + elem(dir, 1)}
     end
 
-    defp move(map, guard_pos, dir_index, visited) do
+    defp move(map, guard_pos, dir_index, visited, count) do
         next_pos = add(guard_pos, dir_index)
         char = Map.get(map, next_pos, "*")
         cond do
+            count == 25000 -> count
             char == "*" -> visited
             char == "." or char == "^" ->
-                move(map, next_pos, dir_index, MapSet.put(visited, {next_pos}))
-            char == "#" -> move(map, guard_pos, rem(dir_index + 1, 4), visited)
+                move(map, next_pos, dir_index, MapSet.put(visited, {next_pos}), count+1)
+            char == "#" -> move(map, guard_pos, rem(dir_index + 1, 4), visited, count)
         end
     end
 
@@ -41,55 +42,64 @@ defmodule Day6 do
         rem(dir_index + 1, 4)
     end
 
-    defp all_positions(map, pos, dir_index, visited) do
+    defp move2(map, pos, dir_index, visited) do
         next_pos = add(pos, dir_index)
-        case Map.get(map, next_pos) do
-            "#" -> Enum.reverse(visited)
-            nil -> Enum.reverse(visited)
-            _ -> all_positions(map, next_pos, dir_index, [next_pos | visited])
-        end
-    end
-
-    def obstacle(map, guard_pos, dir_index, visited_dir_map, count) do
-        IO.inspect(guard_pos)
-        positions = all_positions(map, guard_pos, next_dir_index(dir_index), [])
-        found = Enum.reduce_while(positions, false, fn pos, _acc ->
-            dirs = Map.get(visited_dir_map, pos, [])
-            if Enum.any?(Enum.map(dirs, fn dir -> dir == next_dir_index(dir_index) end)) do
-                {:halt, true}
-            else
-                {:cont, false}
-            end
-        end)
-
-        next_pos = add(guard_pos, dir_index)
-
-        if found do
-            IO.puts("Place obstacle at (#{elem(next_pos, 0)}, #{elem(next_pos, 1)})")
-            obstacle(map, next_pos, dir_index, visited_dir_map, count+1)
+        dirs = Map.get(visited, next_pos, [])
+        if Enum.member?(dirs, dir_index) do
+            true
         else
             char = Map.get(map, next_pos, "*")
             cond do
-                char == "*" -> count
-                char == "^" or char == "." ->
-                    new_visited_dir_map = Map.update(
-                        visited_dir_map, next_pos, [dir_index], fn existing_value ->
-                            [dir_index | existing_value]
+                char == "*" -> false
+                char == "." or char == "^" ->
+                    visited = Map.update(visited, next_pos, [dir_index], fn existing_value ->
+                        [dir_index | existing_value]
                     end)
-                    obstacle(map, next_pos, dir_index, new_visited_dir_map, count)
+                    move2(map, next_pos, dir_index, visited)
                 char == "#" ->
-                    obstacle(map, guard_pos, next_dir_index(dir_index), visited_dir_map, count)
+                    move2(map, pos, next_dir_index(dir_index), visited)
             end
+        end
+    end
+
+    def obstacle(map, guard_pos, dir_index, obstacle_positions) do
+        next_pos = add(guard_pos, dir_index)
+        char = Map.get(map, next_pos, "*")
+        cond do
+            char == "*" -> obstacle_positions
+            char == "." or char == "^" ->
+                if move2(map, guard_pos, next_dir_index(dir_index), %{
+                    guard_pos => [dir_index, next_dir_index(dir_index)]
+                }) do
+                    obstacle(map, next_pos, dir_index, MapSet.put(obstacle_positions, next_pos))
+                else
+                    obstacle(map, next_pos, dir_index, obstacle_positions)
+                end
+            char == "#" ->
+                obstacle(map, guard_pos, next_dir_index(dir_index), obstacle_positions)
         end
     end
 
     def part1(map, guard_starting_pos) do
-        move(map, guard_starting_pos, 0, MapSet.new())
+        move(map, guard_starting_pos, 0, MapSet.new(), -10000)
         |> MapSet.size()
     end
 
     def part2(map, guard_starting_pos) do
-        obstacle(map, guard_starting_pos, 0, %{guard_starting_pos => [0]}, 0)
+        loop_pos = obstacle(map, guard_starting_pos, 0, MapSet.new())
+        no_loop_count =
+            Enum.count(loop_pos, fn pos ->
+                map = Map.put(map, pos, "#")
+
+                if move(map, guard_starting_pos, 0, MapSet.new(), 0) != 25000 do
+                    IO.puts("No Loop: (#{elem(pos, 0)}, #{elem(pos, 1)})")
+                    false  # This element is a "No Loop"
+                else
+                    true # This element is not a "No Loop"
+                end
+            end)
+
+IO.puts("Total No Loop positions: #{no_loop_count}")
     end
 
     @spec solve(String.t()) :: nil
@@ -97,73 +107,12 @@ defmodule Day6 do
         {_, content} = File.read(filename)
         {map, guard_starting_pos} = parse(content)
 
-        {took, result} = :timer.tc(fn -> part1(map, guard_starting_pos) end)
-        IO.puts("Part1: #{result}, took: #{took / 1_000_000} seconds")
+        # {took, result} = :timer.tc(fn -> part1(map, guard_starting_pos) end)
+        # IO.puts("Part1: #{result}, took: #{took / 1_000_000} seconds")
 
         {took, result} = :timer.tc(fn -> part2(map, guard_starting_pos) end)
         IO.puts("Part2: #{result}, took: #{took / 1_000_000} seconds")
     end
 end
 
-Day6.solve("./test.txt")
-
-# {_, content} = File.read("./test.txt")
-# {map, starting_pos} = Day5.parse(content)
-#
-# visited = %{
-#     {6, 4} => [0],
-#     {5, 4} => [0],
-#     {4, 4} => [0],
-#     {3, 4} => [0],
-#     {2, 4} => [0],
-#     {1, 4} => [0],
-#     {1, 5} => [1],
-#     {1, 6} => [1],
-#     {1, 7} => [1],
-#     {1, 8} => [1],
-#     {2, 8} => [2],
-#     {3, 8} => [2],
-#     {4, 8} => [2],
-#     {5, 8} => [2],
-#     {6, 8} => [2],
-#     {6, 7} => [3],
-#     {6, 6} => [3],
-#     {6, 5} => [3],
-#     {6, 4} => [3],
-# }
-#
-# IO.inspect(Day5.obstacle(map, {6, 4}, 3, visited, 0))
-
-# Day5.solve("./test.txt")
-
-    # defp obstacle(map, guard_pos, dir_index, visited_dir_map, count) do
-    #     next_pos = add(guard_pos, dir_index)
-    #     # IO.inspect(visited_dir_map)
-    #
-    #     last_dirs = Map.get(visited_dir_map, next_pos, [-1])
-    #     valid = Enum.reduce_while(last_dirs, false, fn dir, _acc ->
-    #         if next_dir_index(dir_index) == dir do
-    #             {:halt, true}
-    #         else
-    #             {:cont, false}
-    #         end
-    #     end)
-    #
-    #     if valid do
-    #         IO.inspect(add(next_pos, dir_index))
-    #         obstacle(map, next_pos, dir_index, visited_dir_map, count+1)
-    #     else
-    #         char = Map.get(map, next_pos, "*")
-    #         cond do
-    #             char == "*" -> count
-    #             char == "." or char == "^" ->
-    #                 new_visited_dir_map = Map.update(
-    #                     visited_dir_map, next_pos, [dir_index], fn existing_value ->
-    #                     [dir_index | existing_value]
-    #                 end)
-    #                 obstacle(map, next_pos, dir_index, new_visited_dir_map, count)
-    #             char == "#" ->
-    #                 obstacle(map, guard_pos, next_dir_index(dir_index), visited_dir_map, count)
-    #         end
-    #     end
-    # end
+Day6.solve("./input.txt")

@@ -8,7 +8,7 @@ defmodule Day3 do
         |> (fn [a, b] -> a * b end).()
     end
 
-    @spec part1(String.t()) :: integer
+    @spec part1(String.t()) :: integer()
     def part1(filepath) do
         {_, content} = File.read(filepath)
 
@@ -18,7 +18,7 @@ defmodule Day3 do
         |> Enum.sum()
     end
 
-    @spec part2(String.t()) :: integer
+    @spec part2(String.t()) :: integer()
     def part2(filepath) do
         {_, content} = File.read(filepath)
 
