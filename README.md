@@ -4,8 +4,10 @@ This repository contains my solutions for the [Advent of Code](https://adventofc
 
 ## 2025
 ### BBF
-- Day1 was solved using my own [programming
+- Day1: Solved using my own [programming
 langugage](https://github.com/aaronbittel/BBF-Lang).
+- Day2: Python
+- Day3: Go
 
 ## 2024
 ### Elixir
