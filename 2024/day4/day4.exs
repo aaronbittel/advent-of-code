@@ -10,7 +10,7 @@ defmodule Day4 do
         {0, -1},
     ]
 
-    @spec parse(String.t()) :: %{{integer, integer} => String.t()}
+    @spec parse(String.t()) :: %{{integer(), integer()} => String.t()}
     defp parse(filename) do
         File.read!(filename)
         |> String.trim()
@@ -25,7 +25,7 @@ defmodule Day4 do
         end)
     end
 
-    @spec part1(String.t()) :: integer
+    @spec part1(String.t()) :: integer()
     def part1(filename) do
         map = parse(filename)
         Map.keys(map)
@@ -36,7 +36,7 @@ defmodule Day4 do
         |> Enum.sum()
     end
 
-    @spec part2(String.t()) :: integer
+    @spec part2(String.t()) :: integer()
     def part2(filename) do
         map = parse(filename)
         Map.keys(map)
@@ -47,7 +47,7 @@ defmodule Day4 do
         |> Enum.sum()
     end
 
-    @spec count_xmas(%{{integer, integer} => String.t()}, {integer, integer}) :: integer
+    @spec count_xmas(%{{integer(), integer()} => String.t()}, {integer(), integer()}) :: integer()
     defp x_mas(map, {row, col}) do
         one = Map.get(map, {row-1, col-1}, ".") <> Map.get(map, {row+1, col+1}, ".")
         two = Map.get(map, {row+1, col-1}, ".") <> Map.get(map, {row-1, col+1}, ".")
@@ -58,14 +58,14 @@ defmodule Day4 do
         end
     end
 
-    @spec count_xmas(%{{integer, integer} => String.t()}, {integer, integer}) :: integer
+    @spec count_xmas(%{{integer(), integer()} => String.t()}, {integer(), integer()}) :: integer()
     defp count_xmas(map, {row, col}) do
         Enum.reduce(@directions, 0, fn {dr, dc}, acc ->
             acc + check_direction(map, row, col, dr, dc)
         end)
     end
 
-    @spec check_direction(%{{integer, integer} => String.t()}, integer, integer, integer, integer) :: integer
+    @spec check_direction(%{{integer(), integer()} => String.t()}, integer(), integer(), integer(), integer()) :: integer()
     defp check_direction(map, row, col, dr, dc) do
         Enum.reduce(0..2, true, fn i, valid ->
             valid && Map.get(map, {row + (i+1)*dr, col + (i+1)*dc}, ".") == String.at("MAS", i)

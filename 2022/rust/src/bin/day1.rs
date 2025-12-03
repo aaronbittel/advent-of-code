@@ -13,7 +13,7 @@ pub fn part1(path: &str) -> Result<i32, Box<dyn Error>> {
     let mut max_elf: i32 = 0;
 
     for elf in elves {
-        max_elf = cmp::max(max_elf, elf.into_iter().sum());
+        max_elf = cmp::max(max_elf, elf.iter().sum());
     }
 
     Ok(max_elf)
@@ -21,11 +21,11 @@ pub fn part1(path: &str) -> Result<i32, Box<dyn Error>> {
 
 pub fn part2(path: &str) -> Result<i32, Box<dyn Error>> {
     let mut supplies: Vec<i32> = aoc::split_groups::<i32>(path)?
-        .into_iter()
-        .map(|x| x.into_iter().sum())
+        .iter()
+        .map(|x| x.iter().sum())
         .collect();
     supplies.sort_by(|a, b| b.cmp(a));
-    Ok(supplies.into_iter().take(3).sum())
+    Ok(supplies.iter().take(3).sum())
 }
 
 #[cfg(test)]

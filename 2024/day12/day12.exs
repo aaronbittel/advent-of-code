@@ -5,6 +5,7 @@ defmodule Day12 do
     @type grid() :: %{pos => char}
 
     @spec parse(String.t()) :: grid()
+
     def parse(filename) do
         File.read!(filename)
         |> String.split("\n", trim: true)

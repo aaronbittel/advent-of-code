@@ -1,6 +1,6 @@
 defmodule Day1 do
 
-    @spec parse(String.t()) :: {[integer], [integer]}
+    @spec parse(String.t()) :: {[integer()], [integer()]}
     def parse(filepath) do
         File.stream!(filepath)
         |> Stream.map(fn line ->
@@ -16,14 +16,14 @@ defmodule Day1 do
             end).()
     end
 
-    @spec part1([integer], [integer]) :: integer
+    @spec part1([integer()], [integer()]) :: integer()
     def part1(left, right) do
         Enum.zip_reduce(left, right, 0, fn l, r, acc ->
             acc + abs(l-r)
         end)
     end
 
-    @spec part2([integer], [integer]) :: integer
+    @spec part2([integer()], [integer()]) :: integer()
     def part2(left, right) do
         right_counter = Enum.frequencies(right)
 
