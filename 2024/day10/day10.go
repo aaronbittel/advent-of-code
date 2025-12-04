@@ -33,29 +33,50 @@ func main() {
 	res1 := part1(grid, startingIdx)
 	part1Dur := time.Since(startPart1)
 	fmt.Printf("Part1: %d, took: %s\n", res1, part1Dur)
+
+	startPart2 := time.Now()
+	res2 := part2(grid, startingIdx)
+	part2Dur := time.Since(startPart2)
+	fmt.Printf("Part2: %d, took: %s\n", res2, part2Dur)
 }
 
-func part1(grid Grid, startingIdx []int) int {
+func part2(grid Grid, startingIdx []int) int {
 	var res int
 
 	for _, idx := range startingIdx {
-		res += traverse(grid, idx)
+		paths := traverse(grid, idx)
+		res += len(paths)
 	}
 
 	return res
 }
 
-func (g Grid) intToCoord(x int) (int, int) {
-	return x / g.width, x % g.width
+func part1(grid Grid, startingIdx []int) int {
+	uniquePoints := func(points []Point) int {
+		unique := make(map[Point]struct{})
+		for _, point := range points {
+			unique[point] = struct{}{}
+		}
+		return len(unique)
+	}
+
+	var res int
+
+	for _, idx := range startingIdx {
+		res += uniquePoints(traverse(grid, idx))
+	}
+
+	return res
 }
 
-func traverse(grid Grid, start int) int {
-	type Point struct {
-		y int
-		x int
-	}
+type Point struct {
+	y int
+	x int
+}
+
+func traverse(grid Grid, start int) []Point {
 	directions := [4][2]int{{-1, 0}, {0, 1}, {1, 0}, {0, -1}}
-	found := make(map[Point]struct{})
+	var found []Point
 	y, x := grid.intToCoord(start)
 	queue := []Point{Point{y, x}}
 
@@ -66,7 +87,7 @@ func traverse(grid Grid, start int) int {
 		_, curNum := grid.At(point.y, point.x)
 
 		if curNum == 9 {
-			found[point] = struct{}{}
+			found = append(found, point)
 			continue
 		}
 
@@ -85,7 +106,7 @@ func traverse(grid Grid, start int) int {
 
 	}
 
-	return len(found)
+	return found
 }
 
 func parse(content string) (Grid, []int) {
@@ -131,4 +152,8 @@ func (g Grid) String() string {
 	}
 
 	return b.String()
+}
+
+func (g Grid) intToCoord(x int) (int, int) {
+	return x / g.width, x % g.width
 }
