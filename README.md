@@ -7,7 +7,7 @@ This repository contains my solutions for the [Advent of Code](https://adventofc
 - Day1: Solved using my own [programming
 langugage](https://github.com/aaronbittel/BBF-Lang).
 - Day2: Python
-- Day3: Go
+- Day3 & Day4: Go
 
 ## 2024
 ### Elixir
