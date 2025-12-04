@@ -8,13 +8,8 @@ import (
 	"time"
 )
 
-const (
-	EMPTY      = '.'
-	PAPER_ROLL = '@'
-)
-
 type Grid struct {
-	data   []rune
+	data   []bool
 	height int
 	width  int
 }
@@ -53,8 +48,7 @@ func part2(grid Grid) int {
 	var toBeRemoved []int
 	for y := range grid.height {
 		for x := range grid.width {
-			_, r := grid.At(y, x)
-			if r == EMPTY {
+			if !grid.At(y, x) {
 				continue
 			}
 			if grid.CountNeighbours(y, x) < 4 {
@@ -69,7 +63,7 @@ func part2(grid Grid) int {
 	}
 
 	for _, i := range toBeRemoved {
-		grid.data[i] = EMPTY
+		grid.data[i] = false
 	}
 
 	return result + part2(grid)
@@ -79,8 +73,7 @@ func part1(grid Grid) int {
 	var result int
 	for y := range grid.height {
 		for x := range grid.width {
-			_, r := grid.At(y, x)
-			if r == EMPTY {
+			if !grid.At(y, x) {
 				continue
 			}
 			if grid.CountNeighbours(y, x) < 4 {
@@ -94,11 +87,11 @@ func part1(grid Grid) int {
 func parse(content string) Grid {
 	lines := strings.Split(content, "\n")
 	height, width := len(lines)-1, len(lines[0])
-	data := make([]rune, height*width)
+	data := make([]bool, height*width)
 
 	for y, line := range lines {
 		for x, char := range line {
-			data[y*width+x] = char
+			data[y*width+x] = char != '.'
 		}
 	}
 
@@ -116,8 +109,7 @@ func (g Grid) CountNeighbours(y, x int) int {
 			if dy == 0 && dx == 0 {
 				continue
 			}
-			ok, r := g.At(y+dy, x+dx)
-			if ok && r == PAPER_ROLL {
+			if g.At(y+dy, x+dx) {
 				count++
 			}
 		}
@@ -125,18 +117,22 @@ func (g Grid) CountNeighbours(y, x int) int {
 	return count
 }
 
-func (g Grid) At(y, x int) (bool, rune) {
+func (g Grid) At(y, x int) bool {
 	if y < 0 || y >= g.height || x < 0 || x >= g.width {
-		return false, rune(0)
+		return false
 	}
-	return true, g.data[y*g.height+x]
+	return g.data[y*g.width+x]
 }
 
 func (g Grid) String() string {
 	b := strings.Builder{}
 	for y := range g.height {
 		for x := range g.width {
-			fmt.Fprintf(&b, string(g.data[y*g.height+x]))
+			char := "."
+			if g.data[y*g.width+x] {
+				char = "@"
+			}
+			fmt.Fprintf(&b, char)
 		}
 		fmt.Fprintln(&b)
 	}
