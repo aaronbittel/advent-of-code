@@ -55,30 +55,29 @@ func main() {
 	fmt.Printf("Part1: %d, took %s\n", res1, part1Dur)
 
 	part2Start := time.Now()
-	res2 := part2(grid)
+	part2Grid := grid.Copy()
+	part1(part2Grid)
+	path := part2Grid.Path()
+	res2 := part2(grid, path)
 	part2Dur := time.Since(part2Start)
 	fmt.Printf("\r%s", strings.Repeat(" ", 20))
 	fmt.Printf("\rPart2: %d, took %s\n", res2, part2Dur)
 
 }
 
-func part2(grid Grid) int {
+func part2(grid Grid, path []int) int {
 	var res int
-	total := grid.height * grid.width
+	total := len(path)
 	done := 0
-	for y := range grid.height {
-		for x := range grid.width {
-			done++
-			if y == grid.guard.y && x == grid.guard.x {
-				continue
-			}
-			_, r := grid.At(y, x)
-			if r == '#' {
-				continue
-			}
-			res += simulate(grid.Copy(), y, x)
-			fmt.Printf("\r%.2f %% Done.", float64(done)/float64(total)*100)
+	for _, i := range path {
+		done++
+		y := i / grid.width
+		x := i % grid.width
+		if y == grid.guard.y && x == grid.guard.x {
+			continue
 		}
+		res += simulate(grid.Copy(), y, x)
+		fmt.Printf("\r%.2f %% Done.", float64(done)/float64(total)*100)
 	}
 	return res
 }
@@ -150,16 +149,20 @@ func (g Grid) At(y, x int) (bool, rune) {
 }
 
 func (g Grid) Count() int {
-	var res int
+	return len(g.Path())
+}
+
+func (g Grid) Path() []int {
+	var path []int
 	for y := range g.height {
 		for x := range g.width {
 			_, r := g.At(y, x)
 			if r == 'X' {
-				res++
+				path = append(path, y*g.width+x)
 			}
 		}
 	}
-	return res
+	return path
 }
 
 func (g Grid) String() string {
