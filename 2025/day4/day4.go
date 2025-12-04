@@ -45,28 +45,28 @@ func main() {
 
 func part2(grid Grid) int {
 	var result int
-	var toBeRemoved []int
-	for y := range grid.height {
-		for x := range grid.width {
-			if !grid.At(y, x) {
-				continue
-			}
-			if grid.CountNeighbours(y, x) < 4 {
-				result++
-				toBeRemoved = append(toBeRemoved, y*grid.height+x)
+	for {
+		var toBeRemoved []int
+		for y := range grid.height {
+			for x := range grid.width {
+				if !grid.At(y, x) {
+					continue
+				}
+				if grid.CountNeighbours(y, x) < 4 {
+					result++
+					toBeRemoved = append(toBeRemoved, y*grid.width+x)
+				}
 			}
 		}
-	}
 
-	if len(toBeRemoved) == 0 {
-		return result
-	}
+		if len(toBeRemoved) == 0 {
+			return result
+		}
 
-	for _, i := range toBeRemoved {
-		grid.data[i] = false
+		for _, i := range toBeRemoved {
+			grid.data[i] = false
+		}
 	}
-
-	return result + part2(grid)
 }
 
 func part1(grid Grid) int {
