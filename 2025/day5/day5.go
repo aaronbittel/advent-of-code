@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -29,61 +30,35 @@ func main() {
 }
 
 func part2(ranges []Range) int {
-	var res int
+	// Sort by start
+	sort.Slice(ranges, func(i, j int) bool {
+		return ranges[i].start < ranges[j].start
+	})
 
-	for len(ranges) > 0 {
-		smallestIdx := 0
-		imRange := ranges[smallestIdx]
-		for i, r := range ranges {
-			if r.start < imRange.start {
-				smallestIdx = i
-				imRange = r
+	// Merge and accumulate
+	mergedStart := ranges[0].start
+	mergedEnd := ranges[0].end
+	total := 0
+
+	for _, r := range ranges[1:] {
+		if r.start > mergedEnd {
+			// no overlap -> close current interval
+			total += mergedEnd - mergedStart + 1
+
+			// start a new interval
+			mergedStart = r.start
+			mergedEnd = r.end
+		} else {
+			// overlap -> extend the end if needed
+			if r.end > mergedEnd {
+				mergedEnd = r.end
 			}
 		}
-
-		marked := make(map[int]struct{})
-		marked[smallestIdx] = struct{}{}
-		// combine all ranges that have overlap with imRange
-		for {
-			changed := false
-			for i, r := range ranges {
-				// completly distinct
-				if r.start > imRange.end {
-					continue
-				}
-
-				marked[i] = struct{}{}
-				// already covered by imRange
-				if r.start >= imRange.start && r.end <= imRange.end {
-					continue
-				}
-				imRange.end = r.end
-				changed = true
-				break
-			}
-
-			if !changed {
-				break
-			}
-		}
-
-		res += imRange.end - imRange.start + 1
-
-		cleaned := []Range{}
-	outer:
-		for i, r := range ranges {
-			for m := range marked {
-				if i == m {
-					continue outer
-				}
-			}
-			cleaned = append(cleaned, r)
-		}
-
-		ranges = cleaned
 	}
 
-	return res
+	// close final interval
+	total += mergedEnd - mergedStart + 1
+	return total
 }
 
 func part1(ranges []Range, ids []int) int {
