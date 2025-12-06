@@ -50,36 +50,38 @@ func main() {
 
 func parsePart2(content string) []Problem {
 	lines := strings.Split(content, "\n")
+
+	dataLines := lines[:len(lines)-2] // newline + ops
+	opLine := lines[len(lines)-2]
+
 	maxLen := 0
-	for _, line := range lines {
+	for _, line := range dataLines {
 		maxLen = max(maxLen, len(line))
 	}
 
+	var p Problem
 	problems := make([]Problem, 0, len(lines[0])) // to big, but fine
-	i := 0
 	for col := 0; col < maxLen; col++ {
-		var numStr string
-		for _, line := range lines[:len(lines)-2] {
+		b := strings.Builder{}
+		for _, line := range dataLines {
 			if len(line) <= col {
 				break
 			}
-			numStr += string(line[col])
+			b.WriteByte(line[col])
 		}
-		numStr = strings.Trim(numStr, " ")
+		numStr := strings.TrimSpace(b.String())
 		if numStr == "" {
-			i += 1
+			problems = append(problems, p)
+			p = Problem{}
 			continue
 		}
 		num, err := strconv.Atoi(numStr)
 		if err != nil {
 			log.Fatal(err)
 		}
-		if len(problems) == i {
-			problems = append(problems, Problem{})
-		}
-		problems[i].nums = append(problems[i].nums, num)
+		p.nums = append(p.nums, num)
 	}
-	for j, op := range strings.Fields(lines[len(lines)-2]) {
+	for j, op := range strings.Fields(opLine) {
 		problems[j].op = Op(op)
 	}
 	return problems
@@ -88,7 +90,7 @@ func parsePart2(content string) []Problem {
 func calcRes(problems []Problem) int {
 	var res int
 	for _, problem := range problems {
-		res += problem.Do()
+		res += problem.Solve()
 	}
 	return res
 }
@@ -133,17 +135,19 @@ func parsePart1(f io.Reader) []Problem {
 	return problems
 }
 
-func (p Problem) Do() int {
-	var res int
-	for _, num := range p.nums {
-		if p.op == Plus {
+func (p Problem) Solve() int {
+	if len(p.nums) == 0 {
+		return 0
+	}
+
+	res := p.nums[0]
+	for _, num := range p.nums[1:] {
+		switch p.op {
+		case Plus:
 			res += num
-		} else if p.op == Mult {
-			if res == 0 {
-				res++
-			}
+		case Mult:
 			res *= num
-		} else {
+		default:
 			panic("unknown op")
 		}
 	}
