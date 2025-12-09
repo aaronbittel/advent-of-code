@@ -25,7 +25,48 @@ type Distance struct {
 	toIdx   int
 }
 
-type Circuit map[int]struct{}
+type DSU struct {
+	parents []int
+	sizes   []int
+}
+
+func NewDSU(size int) DSU {
+	parents := make([]int, size)
+	sizes := make([]int, size)
+	for i := range size {
+		parents[i] = i
+		sizes[i] = 1
+	}
+	return DSU{
+		parents: parents,
+		sizes:   sizes,
+	}
+}
+
+func (dsu *DSU) find(x int) int {
+	parent := dsu.parents[x]
+	if parent == x {
+		return x
+	}
+	return dsu.find(parent)
+}
+
+func (dsu *DSU) union(x, y int) int {
+	parent1 := dsu.find(x)
+	parent2 := dsu.find(y)
+	if parent1 == parent2 {
+		return dsu.sizes[parent1]
+	}
+	if dsu.sizes[parent1] > dsu.sizes[parent2] {
+		dsu.parents[parent2] = parent1
+		dsu.sizes[parent1] += dsu.sizes[parent2]
+		return dsu.sizes[parent1]
+	}
+	dsu.parents[parent1] = parent2
+	dsu.sizes[parent2] += dsu.sizes[parent1]
+	return dsu.sizes[parent2]
+
+}
 
 func main() {
 	if len(os.Args) < 2 {
@@ -45,119 +86,41 @@ func main() {
 		return cmp.Compare(a.dist, b.dist)
 	})
 
-	subset := append([]Distance(nil), distances[:1000]...)
-	circuits := createCircuits(subset)
-	slices.SortFunc(circuits, func(a, b Circuit) int {
-		return cmp.Compare(len(b), len(a))
-	})
-	res1 := part1(circuits[:3])
+	res1 := part1(distances, len(boxes), 1000)
 	fmt.Printf("Part1: %d\n", res1)
 
-	lastDist := largeCircuit(distances, len(boxes))
-	res2 := part2(boxes[lastDist.fromIdx], boxes[lastDist.toIdx])
+	res2 := part2(boxes, distances)
 	fmt.Printf("Part2: %d\n", res2)
 }
 
-func part2(box1, box2 Box) int {
-	return box1.x * box2.x
-}
-
-func largeCircuit(distances []Distance, boxesCount int) Distance {
-	looseCircuits := []Circuit{}
+func part2(boxes []Box, distances []Distance) int {
 	lastDist := Distance{}
-	for {
-		if len(looseCircuits) == 1 && len(looseCircuits[0]) == boxesCount {
+	dsu := NewDSU(len(boxes))
+	for _, d := range distances {
+		if dsu.union(d.fromIdx, d.toIdx) == len(boxes) {
+			lastDist = d
 			break
 		}
-		lastDist = distances[0]
-		distances = distances[1:]
-
-		circuit := Circuit{lastDist.fromIdx: {}, lastDist.toIdx: {}}
-
-		merged := false
-		for _, lc := range looseCircuits {
-			for idx := range circuit {
-				if _, ok := lc[idx]; ok {
-					merged = true
-					break
-				}
-			}
-			if merged {
-				for idx := range circuit {
-					lc[idx] = struct{}{}
-				}
-				break
-			}
-		}
-		if merged {
-		outer:
-			for {
-				for i, lc1 := range looseCircuits {
-					for j, lc2 := range looseCircuits {
-						if i == j || j < i {
-							continue
-						}
-						needMerge := false
-						for idx := range lc1 {
-							if _, ok := lc2[idx]; ok {
-								needMerge = true
-								break
-							}
-						}
-						if needMerge {
-							for idx := range lc2 {
-								lc1[idx] = struct{}{}
-							}
-							// remove j
-							looseCircuits = append(looseCircuits[:j], looseCircuits[j+1:]...)
-							continue outer
-						}
-					}
-				}
-				break
-			}
-		} else {
-			looseCircuits = append(looseCircuits, circuit)
-		}
 	}
-
-	return lastDist
+	return boxes[lastDist.fromIdx].x * boxes[lastDist.toIdx].x
 }
 
-func part1(curcuits []Circuit) int {
+func part1(distances []Distance, size, count int) int {
+	dsu := NewDSU(size)
+	for _, d := range distances[:count] {
+		dsu.union(d.fromIdx, d.toIdx)
+	}
+
+	sizes := append([]int{}, dsu.sizes...)
+	slices.SortFunc(sizes, func(a, b int) int {
+		return cmp.Compare(b, a)
+	})
+
 	res := 1
-	for _, c := range curcuits {
-		res *= len(c)
+	for _, s := range sizes[:3] {
+		res *= s
 	}
 	return res
-}
-
-func createCircuits(distances []Distance) []Circuit {
-	circuits := []Circuit{}
-	for len(distances) > 0 {
-		dist := distances[0]
-		distances = distances[1:]
-
-		circuit := Circuit{dist.fromIdx: {}, dist.toIdx: {}}
-	outer:
-		for {
-			for i, d := range distances {
-				_, fromOk := circuit[d.fromIdx]
-				_, toOk := circuit[d.toIdx]
-				if fromOk || toOk {
-					circuit[d.fromIdx] = struct{}{}
-					circuit[d.toIdx] = struct{}{}
-					distances = append(distances[:i], distances[i+1:]...)
-					continue outer // restart searching
-				}
-			}
-			// no more connections found
-			break
-		}
-		circuits = append(circuits, circuit)
-	}
-
-	return circuits
 }
 
 func createDistanceGrid(boxes []Box) []Distance {
