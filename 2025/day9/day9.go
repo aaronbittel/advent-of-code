@@ -29,6 +29,7 @@ func main() {
 		log.Fatal(err)
 	}
 	defer f.Close()
+
 	points := parse(f)
 
 	allAreas := allAreas(points)
@@ -40,7 +41,7 @@ func main() {
 	fmt.Printf("Part1: %d\n", res1)
 
 	polygon := Polygon(points)
-	res2 := part3(allAreas, polygon)
+	res2 := part2(allAreas, polygon)
 	fmt.Printf("Part2: %d\n", res2)
 }
 
@@ -63,7 +64,8 @@ func allAreas(points []Point) []Area {
 	return areas
 }
 
-func part3(areas []Area, polygon Polygon) int {
+// working, but slow solution
+func part2(areas []Area, polygon Polygon) int {
 	var maxArea int
 outer:
 	for i, a := range areas {
@@ -100,26 +102,7 @@ outer:
 		maxArea = area(p1, p2)
 		break
 	}
-	return maxArea
-}
-
-func part2(points []Point, tiles Tiles) int {
-	var maxArea int
-	lp := float64(len(points))
-	for i, p1 := range points {
-		for j, p2 := range points {
-			fmt.Printf("\r%.2f %%, %.2f %%        ", float64(i+1)/lp*100.0, float64(j+1)/lp*100.0)
-			if i == j || i < j {
-				continue
-			}
-			c3 := Point{x: p1.x, y: p2.y}
-			c4 := Point{x: p2.x, y: p1.y}
-
-			if tiles.Contains(c3.y, c3.x) && tiles.Contains(c4.y, c4.x) {
-				maxArea = max(maxArea, area(p1, p2))
-			}
-		}
-	}
+	fmt.Printf("\r\033[2K")
 	return maxArea
 }
 
