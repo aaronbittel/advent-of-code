@@ -32,6 +32,8 @@ type VM struct {
 	ip int
 
 	Out []int
+
+	RawProg []int
 }
 
 func NewVM(regs [3]int, program []int) VM {
@@ -50,8 +52,15 @@ func NewVM(regs [3]int, program []int) VM {
 	}
 
 	vm.Out = []int{}
+	vm.RawProg = program
 
 	return vm
+}
+
+func (vm *VM) Run() {
+	for !vm.AtEnd() {
+		vm.Step()
+	}
 }
 
 func (vm *VM) Step() {

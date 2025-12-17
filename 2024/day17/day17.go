@@ -22,16 +22,41 @@ func main() {
 	}
 
 	vm := parse(f)
+	fmt.Println(vm)
 
 	res1 := part1(vm)
 	fmt.Printf("Part1: %s\n", res1)
+
+	res2 := part2(vm)
+	fmt.Printf("Part2: %d\n", res2)
+}
+
+func part2(vm VM) int {
+	return findA(vm.RawProg, 0, vm.B, vm.C, 1)
+}
+
+func findA(prog []int, a, b, c, progPos int) int {
+	if progPos > len(prog) {
+		return a
+	}
+	for i := range 8 {
+		vm := NewVM([3]int{a*8 + i, b, c}, prog)
+		vm.Run()
+		idx := len(prog) - progPos
+		expected := prog[idx]
+		firstDigitOut := vm.Out[0]
+		if expected == firstDigitOut {
+			r := findA(prog, a*8+i, b, c, progPos+1)
+			if r != -1 {
+				return r
+			}
+		}
+	}
+	return -1
 }
 
 func part1(vm VM) string {
-	for !vm.AtEnd() {
-		vm.Step()
-	}
-
+	vm.Run()
 	return vm.Result()
 }
 
