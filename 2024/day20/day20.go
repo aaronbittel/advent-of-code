@@ -6,7 +6,6 @@ import (
 	"io"
 	"log"
 	"os"
-	"sort"
 	"strings"
 	"time"
 )
@@ -32,6 +31,8 @@ type Step struct {
 	length int
 }
 
+var DIRECTIONS = []Point{{-1, 0}, {0, 1}, {1, 0}, {0, -1}}
+
 func main() {
 	if len(os.Args) != 2 {
 		fmt.Fprintf(os.Stderr, "Usage: %s <file>\n", os.Args[0])
@@ -48,13 +49,12 @@ func main() {
 	path := traverse(track)
 
 	res1, dur1 := timeIt(func() int {
-		steps := cheatStepsPart1(track, path)
-		return part1(track.length, steps, 100)
+		return solve(track, path, diamond(2), 100)
 	})
 	fmt.Printf("Part1: %d, took %s\n", res1, dur1)
 
 	res2, dur2 := timeIt(func() int {
-		return part2(track, path, 100)
+		return solve(track, path, diamond(20), 100)
 	})
 	fmt.Printf("Part2: %d, took %s\n", res2, dur2)
 }
@@ -66,9 +66,7 @@ func timeIt[T any](f func() T) (T, time.Duration) {
 	return res, dur
 }
 
-var DIAMOND20 = diamond(20)
-
-func part2(track Track, path map[Point]int, threshold int) int {
+func solve(track Track, path map[Point]int, diamond []Step, threshold int) int {
 	var (
 		pos         = track.start
 		curDir      Point
@@ -97,7 +95,7 @@ func part2(track Track, path map[Point]int, threshold int) int {
 			}
 			if !visitedCheatPaths {
 				visitedCheatPaths = true
-				for _, step := range DIAMOND20 {
+				for _, step := range diamond {
 					dir := step.point
 					np := pos.Add(dir)
 					if v, ok := path[np]; ok && track.length-(curLen+step.length+v) >= threshold {
@@ -150,57 +148,6 @@ func diamond(length int) []Step {
 	}
 	return positions
 }
-
-func part1(trackLen int, steps []int, saved int) int {
-	sort.Ints(steps)
-	var res int
-	for _, r := range steps {
-		if trackLen-r < saved {
-			break
-		}
-		res++
-	}
-	return res
-}
-
-func cheatStepsPart1(track Track, path map[Point]int) []int {
-	var (
-		pos         = track.start
-		curDir      Point
-		nextDir     Point
-		nextPathPos Point
-		curLen      int
-		total       = []int{}
-	)
-
-	for pos != track.end {
-		for _, dir := range DIRECTIONS {
-			d := Point{y: curDir.y * -1, x: curDir.x * -1}
-			if d == dir {
-				continue
-			}
-			newPos := pos.Add(dir)
-			if _, ok := track.walls[newPos]; !ok {
-				nextDir = dir
-				nextPathPos = newPos
-				continue
-			}
-			// walk through wall
-			newPos = newPos.Add(dir)
-			if v, ok := path[newPos]; ok {
-				// +1 because of the step on path was not counted yet
-				// +1 because of the step through the wall
-				total = append(total, curLen+v+2)
-			}
-		}
-		curDir = nextDir
-		pos = nextPathPos
-		curLen++
-	}
-	return total
-}
-
-var DIRECTIONS = []Point{{-1, 0}, {0, 1}, {1, 0}, {0, -1}}
 
 func traverse(track Track) map[Point]int {
 	path := make(map[Point]int)
