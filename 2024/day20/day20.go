@@ -49,12 +49,12 @@ func main() {
 	path := traverse(track)
 
 	res1, dur1 := timeIt(func() int {
-		return solve(track, path, diamond(2), 100)
+		return solve(track, path, 2, 100)
 	})
 	fmt.Printf("Part1: %d, took %s\n", res1, dur1)
 
 	res2, dur2 := timeIt(func() int {
-		return solve(track, path, diamond(20), 100)
+		return solve(track, path, 20, 100)
 	})
 	fmt.Printf("Part2: %d, took %s\n", res2, dur2)
 }
@@ -66,50 +66,36 @@ func timeIt[T any](f func() T) (T, time.Duration) {
 	return res, dur
 }
 
-func solve(track Track, path map[Point]int, diamond []Step, threshold int) int {
+func solve(track Track, path map[Point]int, cheatStep, threshold int) int {
 	var (
-		pos         = track.start
-		curDir      Point
-		nextDir     Point
-		nextPathPos Point
-		curLen      int
-		res         int
+		curPos  = track.start
+		curDir  Point
+		curLen  int
+		res     int
+		diamond = diamond(cheatStep)
 	)
 
-	for pos != track.end {
-		var (
-			foundNextStep     bool
-			visitedCheatPaths bool
-		)
+	for curPos != track.end {
+		for _, step := range diamond {
+			dir := step.point
+			np := curPos.Add(dir)
+			if v, ok := path[np]; ok && track.length-(curLen+step.length+v) >= threshold {
+				res++
+			}
+		}
 		for _, dir := range DIRECTIONS {
 			d := Point{y: curDir.y * -1, x: curDir.x * -1}
 			if d == dir {
 				continue
 			}
-			newPos := pos.Add(dir)
+			newPos := curPos.Add(dir)
 			if _, ok := track.walls[newPos]; !ok {
-				nextDir = dir
-				nextPathPos = newPos
-				foundNextStep = true
-				continue
-			}
-			if !visitedCheatPaths {
-				visitedCheatPaths = true
-				for _, step := range diamond {
-					dir := step.point
-					np := pos.Add(dir)
-					if v, ok := path[np]; ok && track.length-(curLen+step.length+v) >= threshold {
-						res++
-					}
-				}
-			}
-			if foundNextStep && visitedCheatPaths {
+				curDir = dir
+				curPos = newPos
+				curLen++
 				break
 			}
 		}
-		curDir = nextDir
-		pos = nextPathPos
-		curLen++
 	}
 	return res
 }
