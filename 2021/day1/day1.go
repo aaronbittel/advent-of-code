@@ -21,19 +21,45 @@ func main() {
 	}
 	defer f.Close()
 
-	scanner := bufio.NewScanner(f)
-	prev := math.MaxInt
+	prev1 := math.MaxInt
+	prev2 := math.MaxInt
+	window := []int{}
 	var res1 int
+	var res2 int
+
+	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
 		num, err := strconv.Atoi(scanner.Text())
 		if err != nil {
 			log.Fatal(err)
 		}
-		if num > prev {
+		if num > prev1 {
 			res1++
 		}
-		prev = num
+		prev1 = num
+
+		if len(window) < 3 {
+			window = append(window, num)
+		}
+
+		if len(window) == 3 {
+			if Sum(window) > prev2 {
+				res2++
+			}
+			prev2 = Sum(window)
+			window = window[1:]
+		}
+
 	}
 
 	fmt.Printf("Par1: %d\n", res1)
+	fmt.Printf("Par2: %d\n", res2)
+}
+
+func Sum(s []int) int {
+	var res int
+	for _, xs := range s {
+		res += xs
+	}
+	return res
 }
