@@ -21,45 +21,40 @@ func main() {
 	}
 	defer f.Close()
 
-	prev1 := math.MaxInt
-	prev2 := math.MaxInt
-	window := []int{}
-	var res1 int
-	var res2 int
+	var (
+		part1 int
+		prev  = math.MaxInt
+
+		part2      int
+		prevWindow = math.MaxInt
+		window     = [3]int{}
+		windowSum  int
+	)
 
 	scanner := bufio.NewScanner(f)
-	for scanner.Scan() {
+	for i := 0; scanner.Scan(); i++ {
 		num, err := strconv.Atoi(scanner.Text())
 		if err != nil {
 			log.Fatal(err)
 		}
-		if num > prev1 {
-			res1++
+		// part1
+		if num > prev {
+			part1++
 		}
-		prev1 = num
+		prev = num
 
-		if len(window) < 3 {
-			window = append(window, num)
-		}
-
-		if len(window) == 3 {
-			if Sum(window) > prev2 {
-				res2++
+		// part2
+		windowSum += num
+		if i >= 3 {
+			windowSum -= window[i%3]
+			if windowSum > prevWindow {
+				part2++
 			}
-			prev2 = Sum(window)
-			window = window[1:]
 		}
-
+		window[i%3] = num
+		prevWindow = windowSum
 	}
 
-	fmt.Printf("Par1: %d\n", res1)
-	fmt.Printf("Par2: %d\n", res2)
-}
-
-func Sum(s []int) int {
-	var res int
-	for _, xs := range s {
-		res += xs
-	}
-	return res
+	fmt.Printf("Par1: %d\n", part1)
+	fmt.Printf("Par2: %d\n", part2)
 }
