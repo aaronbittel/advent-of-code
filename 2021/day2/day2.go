@@ -1,25 +1,16 @@
 package main
 
 import (
-	common "AOC2021/internal"
 	"bufio"
 	"fmt"
 	"io"
 	"log"
-	"strconv"
-	"strings"
-)
 
-type Dir int
-
-const (
-	Forward Dir = iota
-	Down
-	Up
+	"AOC2021/internal/common"
 )
 
 type Command struct {
-	Dir   Dir
+	Op    string
 	Value int
 }
 
@@ -28,7 +19,11 @@ func main() {
 	defer f.Close()
 
 	commands, parseDur := common.TimeIt(func() []Command {
-		return parse(f)
+		commands, err := parse(f)
+		if err != nil {
+			log.Fatal(err)
+		}
+		return commands
 	})
 	fmt.Printf("Parsing took %s\n", parseDur)
 
@@ -47,16 +42,16 @@ func part2(commands []Command) int {
 	var hori, depth, aim int
 
 	for _, cmd := range commands {
-		switch cmd.Dir {
-		case Forward:
+		switch cmd.Op {
+		case "forward":
 			hori += cmd.Value
 			depth += aim * cmd.Value
-		case Down:
+		case "down":
 			aim += cmd.Value
-		case Up:
+		case "up":
 			aim -= cmd.Value
 		default:
-			panic("unknown dir")
+			panic("unknown op")
 		}
 	}
 
@@ -67,47 +62,35 @@ func part1(commands []Command) int {
 	var hori, depth int
 
 	for _, cmd := range commands {
-		switch cmd.Dir {
-		case Forward:
+		switch cmd.Op {
+		case "forward":
 			hori += cmd.Value
-		case Down:
+		case "down":
 			depth += cmd.Value
-		case Up:
+		case "up":
 			depth -= cmd.Value
 		default:
-			panic("unknown dir")
+			panic("unknown op")
 		}
 	}
 
 	return hori * depth
 }
 
-func parse(f io.Reader) []Command {
-	commands := []Command{}
+func parse(f io.Reader) ([]Command, error) {
+	commands := make([]Command, 0, 1024)
 
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
-		parts := strings.Split(scanner.Text(), " ")
-		dir := NewDir(parts[0])
-		value, err := strconv.Atoi(parts[1])
-		if err != nil {
-			log.Fatal(err)
+		var (
+			op    string
+			value int
+		)
+		if n, err := fmt.Sscanf(scanner.Text(), "%s %d", &op, &value); n != 2 {
+			return nil, err
 		}
-		commands = append(commands, Command{Dir: dir, Value: value})
+		commands = append(commands, Command{Op: op, Value: value})
 	}
 
-	return commands
-}
-
-func NewDir(d string) Dir {
-	switch d {
-	case "forward":
-		return Forward
-	case "down":
-		return Down
-	case "up":
-		return Up
-	default:
-		panic("unknown dir")
-	}
+	return commands, scanner.Err()
 }
