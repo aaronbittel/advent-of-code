@@ -20,17 +20,44 @@ func main() {
 	part1, dur1 := common.TimeIt(func() int {
 		part1Nums := make([]int, len(nums))
 		copy(part1Nums, nums)
-		return solve(part1Nums, 80)
+		return solve2(part1Nums, 80)
 	})
 	fmt.Printf("Part1: %d, took %s\n", part1, dur1)
 
 	part2, dur2 := common.TimeIt(func() int {
-		return solve(nums, 256)
+		return solve2(nums, 256)
 	})
 	fmt.Printf("Part2: %d, took %s\n", part2, dur2)
 }
 
-func solve(nums []int, days int) int {
+func solve2(nums []int, days int) int {
+	var counts [9]int
+
+	for _, n := range nums {
+		counts[n]++
+	}
+
+	for d := 0; d < days; d++ {
+		births := counts[0]
+
+		// shift timers down
+		for i := 0; i < 8; i++ {
+			counts[i] = counts[i+1]
+		}
+
+		// reset and spawn
+		counts[6] += births
+		counts[8] = births
+	}
+
+	total := 0
+	for _, c := range counts {
+		total += c
+	}
+	return total
+}
+
+func solveSlow(nums []int, days int) int {
 	counts := make([]int, 5)
 	for _, num := range nums {
 		counts[num-1]++
