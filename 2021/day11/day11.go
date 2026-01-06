@@ -35,19 +35,29 @@ func main() {
 
 	grid := parse(f)
 
+	part1Grid := copyArray(grid)
 	part1, dur1 := common.TimeIt(func() int {
-		return part1(&grid, 100)
+		var res int
+		for range 100 {
+			res += flashes(&part1Grid)
+		}
+		return res
 	})
-	fmt.Println(grid)
 	fmt.Printf("Part1: %d, took %s\n", part1, dur1)
-}
 
-func part1(grid *Grid, count int) int {
-	var res int
-	for range count {
-		res += flashes(grid)
-	}
-	return res
+	part2, dur2 := common.TimeIt(func() int {
+		var (
+			res int
+			r   int
+		)
+		for ; r != 100; res++ {
+			r = flashes(&grid)
+			fmt.Printf("\r%d %% flashing.", r)
+		}
+		fmt.Printf("\r\033[2K")
+		return res
+	})
+	fmt.Printf("Part2: %d, took %s\n", part2, dur2)
 }
 
 func flashes(grid *Grid) int {
@@ -145,4 +155,15 @@ func (g Grid) String() string {
 
 func (g Grid) InBounds(y, x int) bool {
 	return y >= 0 && y < SIZE && x >= 0 && x < SIZE
+}
+
+func copyArray(src Grid) Grid {
+	dst := Grid{}
+	for y := range SIZE {
+		for x := range SIZE {
+			o := src[y][x]
+			dst[y][x] = &Octopus{Level: o.Level}
+		}
+	}
+	return dst
 }
