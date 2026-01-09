@@ -23,37 +23,55 @@ func main() {
 	graph := parse(f)
 
 	res1, dur1 := common.TimeIt(func() int {
-		return part1(graph)
+		return solve(graph, false)
 	})
 	fmt.Printf("Part1: %d, took %s\n", res1, dur1)
+
+	res2, dur2 := common.TimeIt(func() int {
+		return solve(graph, true)
+	})
+	fmt.Printf("Part2: %d, took %s\n", res2, dur2)
 }
 
-func part1(graph Graph) int {
+func solve(graph Graph, canDoubleVisit bool) int {
 	visited := map[string]struct{}{Start: {}}
-	return traverse(graph, Start, visited)
+	return traverse(graph, Start, visited, canDoubleVisit)
 }
 
-func traverse(graph Graph, pos string, visitedSmallCaves map[string]struct{}) int {
+func traverse(graph Graph, pos string, visitedSmallCaves map[string]struct{}, canDoubleVisit bool) int {
 	var count int
 	for _, neighbour := range graph[pos] {
-		clonedMap := maps.Clone(visitedSmallCaves)
-		if _, ok := visitedSmallCaves[neighbour]; ok {
+		var clonedMap = maps.Clone(visitedSmallCaves)
+
+		// dont move back to start
+		if neighbour == Start {
 			continue
 		}
-		if isSmallCave(neighbour) {
-			clonedMap[neighbour] = struct{}{}
-		}
+
+		// finish at end
 		if neighbour == End {
 			count++
 			continue
 		}
-		count += traverse(graph, neighbour, clonedMap)
+
+		if isSmallCave(neighbour) {
+			clonedMap[neighbour] = struct{}{}
+			if _, ok := visitedSmallCaves[neighbour]; ok {
+				if canDoubleVisit {
+					cloneTwiceMap := maps.Clone(visitedSmallCaves)
+					count += traverse(graph, neighbour, cloneTwiceMap, false)
+				}
+				continue
+			}
+		}
+
+		count += traverse(graph, neighbour, clonedMap, canDoubleVisit)
 	}
 	return count
 }
 
 func isSmallCave(node string) bool {
-	return node[0] >= 97 && node[0] <= 122
+	return node[0] >= 'a' && node[0] <= 'z'
 }
 
 func parse(r io.Reader) Graph {
