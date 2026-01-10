@@ -8,6 +8,7 @@ import (
 	"log"
 	"maps"
 	"math"
+	"slices"
 	"strings"
 )
 
@@ -25,16 +26,61 @@ type Node struct {
 
 type Rules map[string]byte
 
+type PairCounts[T comparable] map[T]int
+
 func main() {
 	f := common.GetFile()
 	defer f.Close()
 
 	template, rules := parse(f)
+	templateRaw := template.Result()
 
 	res1, dur1 := common.TimeIt(func() int {
 		return part1(template, rules, 10)
 	})
 	fmt.Printf("Part 1: %d, took %s\n", res1, dur1)
+
+	res2, dur2 := common.TimeIt(func() int {
+		return part2(templateRaw, rules, 40)
+	})
+	fmt.Printf("Part 2: %d, took %s\n", res2, dur2)
+}
+
+func part2(template string, rules Rules, count int) int {
+	// Make initial pairCounts
+	pairCounts := PairCounts[string]{}
+	for i := 0; i < len(template)-1; i++ {
+		pairCounts[template[i:i+2]]++
+	}
+
+	var charCounts = PairCounts[byte]{}
+	for range count {
+		pairCounts, charCounts = step2(pairCounts, rules)
+	}
+	charCounts[template[len(template)-1]] += 1
+
+	counts := slices.Collect(maps.Values(charCounts))
+	slices.Sort(counts)
+	return counts[len(counts)-1] - counts[0]
+}
+
+func step2(pairCounts PairCounts[string], rules Rules) (PairCounts[string], PairCounts[byte]) {
+	newPairs := make(map[string]int)
+	charCounts := make(map[byte]int)
+
+	for pair, count := range pairCounts {
+		if v, ok := rules[pair]; ok {
+			leftPair := fmt.Sprintf("%c%s", pair[0], string(v))
+			rightPair := fmt.Sprintf("%s%c", string(v), pair[1])
+			newPairs[leftPair] += count
+			newPairs[rightPair] += count
+
+			charCounts[pair[0]] += count
+			charCounts[rules[pair]] += count
+		}
+	}
+
+	return newPairs, charCounts
 }
 
 func part1(template *LinkedList, rules Rules, count int) int {
@@ -45,7 +91,7 @@ func part1(template *LinkedList, rules Rules, count int) int {
 		maxCount = math.MinInt
 		minCount = math.MaxInt
 	)
-	for count := range maps.Values(template.Counts) {
+	for _, count := range template.Counts {
 		maxCount = max(maxCount, count)
 		minCount = min(minCount, count)
 	}
