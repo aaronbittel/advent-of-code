@@ -13,6 +13,15 @@ import (
 
 type Grid [][]int
 
+type Point struct {
+	Y int
+	X int
+}
+
+var DIRECTIONS = []Point{{-1, 0}, {0, 1}, {1, 0}, {0, -1}}
+
+const SCALE = 5
+
 func main() {
 	filename := common.GetFilename()
 	data, err := os.ReadFile(filename)
@@ -26,14 +35,50 @@ func main() {
 		return part1(grid)
 	})
 	fmt.Printf("Part1: %d, took %s\n", res1, dur1)
+
+	res2, dur2 := common.TimeIt(func() int {
+		return part2(grid)
+	})
+	fmt.Printf("Part2: %d, took %s\n", res2, dur2)
 }
 
-type Point struct {
-	Y int
-	X int
-}
+func part2(grid Grid) int {
+	goal := Point{Y: len(grid)*SCALE - 1, X: len(grid[0])*SCALE - 1}
+	var res int
 
-var DIRECTIONS = []Point{{-1, 0}, {0, 1}, {1, 0}, {0, -1}}
+	pq := &PriorityQueue{}
+	heap.Init(pq)
+	heap.Push(pq, &State{})
+	memo := make(map[Point]int)
+	memo[Point{}] = 0
+
+	for pq.Len() > 0 {
+		s := heap.Pop(pq).(*State)
+
+		if s.P == goal {
+			res = s.Risk
+			break
+		}
+
+		for _, dir := range DIRECTIONS {
+			newY, newX := s.P.Y+dir.Y, s.P.X+dir.X
+			if !grid.InBoundsPart2(newY, newX) {
+				continue
+			}
+			newRisk := s.Risk + grid.MapRisk(newY, newX)
+			newP := Point{Y: newY, X: newX}
+			if r, ok := memo[newP]; ok {
+				if r <= newRisk {
+					continue
+				}
+			}
+			memo[newP] = newRisk
+			heap.Push(pq, &State{P: newP, Risk: newRisk})
+		}
+	}
+
+	return res
+}
 
 func part1(grid Grid) int {
 	goal := Point{Y: len(grid) - 1, X: len(grid[0]) - 1}
@@ -102,4 +147,18 @@ func (g Grid) String() string {
 
 func (g Grid) InBounds(y, x int) bool {
 	return y >= 0 && y < len(g) && x >= 0 && x < len(g[0])
+}
+
+func (g Grid) InBoundsPart2(y, x int) bool {
+	return y >= 0 && y < len(g)*SCALE && x >= 0 && x < len(g[0])*SCALE
+}
+
+func (g Grid) MapRisk(y, x int) int {
+	riskInc := y/len(g) + x/len(g[0])
+	localY, localX := y%len(g), x%len(g[0])
+	risk := g[localY][localX] + riskInc
+	if risk > 9 {
+		risk -= 9
+	}
+	return risk
 }
