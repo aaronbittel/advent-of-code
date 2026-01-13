@@ -4,6 +4,7 @@ import (
 	"AOC2021/internal/common"
 	"fmt"
 	"log"
+	"math"
 	"os"
 	"strconv"
 	"strings"
@@ -16,61 +17,121 @@ type Parser struct {
 	totalNumVersion int
 }
 
+type Operator int
+
+const (
+	Sum Operator = iota
+	Product
+	Minimum
+	Maximum
+	Literal
+	GreaterThan
+	LessThan
+	EqualTo
+)
+
 func main() {
 	filename := common.GetFilename()
 
 	packet := parse(filename)
 	data := decodeToBinary(packet)
 
-	res1, dur1 := common.TimeIt(func() int {
-		return part1(data)
+	res, dur1 := common.TimeIt(func() [2]int {
+		res1, res2 := part1(data)
+		return [2]int{res1, res2}
 	})
-	fmt.Printf("Part1: %d, took %s\n", res1, dur1)
+	fmt.Printf("Part1: %d, Part2: %d, took %s\n", res[0], res[1], dur1)
 }
 
-func part1(data string) int {
+func part1(data string) (int, int) {
 	parser := Parser{data: data}
-	parser.packet()
+	res, _ := parser.packet()
 
-	return parser.totalNumVersion
+	return parser.totalNumVersion, res
 }
 
-func (p *Parser) packet() int {
-	var read int
+func (p *Parser) packet() (int, int) {
+	var (
+		read int
+		res  int
+	)
 
 	version := p.version()
 	read += 3
 	p.totalNumVersion += version
-	typeID := p.typeID()
+	op := Operator(p.typeID())
 	read += 3
-	if typeID == 4 {
-		_, readLit := p.literal()
+	if op == Literal {
+		val, readLit := p.literal()
 		read += readLit
+		res = val
 	} else {
-		readOp := p.operator()
+		val, readOp := p.operator(op)
 		read += readOp
+		res = val
 	}
-	return read
+	return res, read
 }
 
-func (p *Parser) operator() int {
-	var read int
+func (p *Parser) operator(op Operator) (int, int) {
+	var (
+		read int
+		res  int
+
+		cmp1 int
+		cmp2 int
+	)
+	switch op {
+	case Sum:
+		res = 0
+	case Product:
+		res = 1
+	case Minimum:
+		res = math.MaxInt
+	case Maximum:
+		res = math.MinInt
+	case GreaterThan, LessThan, EqualTo:
+		cmp1, cmp2 = -1, -1
+	default:
+		panic("illegal operator")
+	}
 	if p.parseN(1) == 0 {
 		totalLength := p.parseN(15)
 		read += 16
 		for totalLength > 0 {
-			packetRead := p.packet()
+			val, packetRead := p.packet()
 			read += packetRead
 			totalLength -= packetRead
+			if op == GreaterThan || op == LessThan || op == EqualTo {
+				if cmp1 == -1 {
+					cmp1 = val
+				} else if cmp2 == -1 {
+					cmp2 = val
+					res = apply(op, cmp1, cmp2)
+				}
+			} else {
+				res = apply(op, res, val)
+			}
 		}
 	} else {
 		numSubpackets := p.parseN(11)
 		read += 12
 		for range numSubpackets {
-			read += p.packet()
+			val, packetRead := p.packet()
+			read += packetRead
+			if op == GreaterThan || op == LessThan || op == EqualTo {
+				if cmp1 == -1 {
+					cmp1 = val
+				} else if cmp2 == -1 {
+					cmp2 = val
+					res = apply(op, cmp1, cmp2)
+				}
+			} else {
+				res = apply(op, res, val)
+			}
 		}
 	}
-	return read
+	return res, read
 }
 
 func (p *Parser) literal() (int, int) {
@@ -133,40 +194,62 @@ func parse(filename string) string {
 }
 
 func hexToBinStr(hex byte) string {
-	switch hex {
-	case '0':
-		return "0000"
-	case '1':
-		return "0001"
-	case '2':
-		return "0010"
-	case '3':
-		return "0011"
-	case '4':
-		return "0100"
-	case '5':
-		return "0101"
-	case '6':
-		return "0110"
-	case '7':
-		return "0111"
-	case '8':
-		return "1000"
-	case '9':
-		return "1001"
-	case 'A':
-		return "1010"
-	case 'B':
-		return "1011"
-	case 'C':
-		return "1100"
-	case 'D':
-		return "1101"
-	case 'E':
-		return "1110"
-	case 'F':
-		return "1111"
+	i64, err := strconv.ParseUint(string(hex), 16, 64)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return fmt.Sprintf("%04b", i64)
+}
+
+func apply(op Operator, v1, v2 int) int {
+	switch op {
+	case Sum:
+		return v1 + v2
+	case Product:
+		return v1 * v2
+	case Minimum:
+		return min(v1, v2)
+	case Maximum:
+		return max(v1, v2)
+	case GreaterThan:
+		if v1 > v2 {
+			return 1
+		}
+		return 0
+	case LessThan:
+		if v1 < v2 {
+			return 1
+		}
+		return 0
+	case EqualTo:
+		if v1 == v2 {
+			return 1
+		}
+		return 0
 	default:
-		panic("invalid hex string")
+		panic("illegal operator")
+	}
+}
+
+func (op Operator) String() string {
+	switch op {
+	case Sum:
+		return "Sum"
+	case Product:
+		return "Product"
+	case Minimum:
+		return "Minimum"
+	case Maximum:
+		return "Maximum"
+	case Literal:
+		return "Literal"
+	case GreaterThan:
+		return "GreaterThan"
+	case LessThan:
+		return "LessThan"
+	case EqualTo:
+		return "EqualTo"
+	default:
+		panic("illegal operator")
 	}
 }
