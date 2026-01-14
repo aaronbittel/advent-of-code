@@ -28,63 +28,49 @@ func main() {
 
 	target := parse(f)
 
-	res1, dur1 := common.TimeIt(func() int {
-		return part1(target)
+	res, dur := common.TimeIt(func() [2]int {
+		res1, res2 := part1(target)
+		return [2]int{res1, res2}
 	})
-	fmt.Printf("Part1: %d, took %s\n", res1, dur1)
+	fmt.Printf("Part1: %d, Part2: %d, took %s\n", res[0], res[1], dur)
 }
 
-func part1(target Rect) int {
+func part1(target Rect) (int, int) {
 	var (
-		res  int
-		maxY = intAbs(target.Y - target.Height)
+		count int
+		res   int
+		minY  = target.Y - target.Height
+		maxY  = intAbs(minY)
+		maxX  = target.X + target.Width
 	)
-outer:
-	for y := 1; y < maxY; y++ {
-		for x := 1; ; x++ {
-			height, result := target.Try(y, x)
-			switch result {
-			case Hit:
+	for y := minY; y < maxY; y++ {
+		for x := 1; x < maxX; x++ {
+			height, ok := target.Try(y, x)
+			if ok {
 				res = max(res, height)
-			case TooShort:
-				continue
-			case TooFar:
-				continue outer
+				count++
 			}
 		}
 	}
-	return res
+	return res, count
 }
 
-type Result int
-
-const (
-	Hit Result = iota
-	TooShort
-	TooFar
-)
-
-func (r Rect) Try(y, x int) (int, Result) {
+func (r Rect) Try(y, x int) (int, bool) {
 	var (
 		pos    = Vector2{}
 		vel    = Vector2{Y: y, X: x}
 		height int
 	)
 
-	for {
+	for !r.Beyond(pos.Y, pos.X) {
 		if r.Inside(pos.Y, pos.X) {
-			return height, Hit
+			return height, true
 		}
 		pos, vel = pos.Advance(vel.Y, vel.X)
-		if r.TooShort(pos.Y, pos.X) {
-			return 0, TooShort
-		}
-		if r.TooFar(pos.Y, pos.X) {
-			return 0, TooFar
-		}
 		height = max(height, pos.Y)
 	}
 
+	return 0, false
 }
 
 func parse(r io.Reader) Rect {
@@ -115,11 +101,7 @@ func (r Rect) Inside(y, x int) bool {
 }
 
 func (r Rect) Beyond(y, x int) bool {
-	yBorder := r.Y - r.Height - 1
-	yTrue := y < yBorder
-	xBorder := r.X + r.Width - 1
-	xTrue := x > xBorder
-	return yTrue || xTrue
+	return r.TooShort(y, x) || r.TooFar(y, x)
 }
 
 func (r Rect) TooShort(y, x int) bool {
