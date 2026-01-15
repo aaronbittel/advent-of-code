@@ -30,3 +30,9 @@ func TimeIt[T any](f func() T) (T, time.Duration) {
 	dur := time.Since(start)
 	return res, dur
 }
+
+func Assert(cond bool, msg string) {
+	if !cond {
+		panic("assertion failed: " + msg)
+	}
+}
