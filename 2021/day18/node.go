@@ -25,7 +25,7 @@ func (n *Node) Magnitude() int {
 func (n *Node) Sum(other *Node) *Node {
 	resultNode := n.Add(other)
 	for resultNode.Reduce() {
-		common.Assert(resultNode.Validate(), "validation")
+		common.Assert(resultNode.Validate(), "validate node consistency")
 	}
 	return resultNode
 }
@@ -245,4 +245,8 @@ func (n *Node) IsLeftSide() bool {
 		last = last.Parent
 	}
 	return root.Left == last
+}
+
+func (n *Node) Clone() *Node {
+	return ParseNode(n.String())
 }
