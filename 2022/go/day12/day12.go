@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"fmt"
 	"log"
-	"math"
 	"os"
 	"strings"
 )
@@ -28,7 +27,7 @@ func main() {
 	grid, start, goal := parse(data)
 
 	res1, dur1 := common.TimeIt(func() int {
-		return shortestLength(grid, start, goal)
+		return part1(grid, start, goal)
 	})
 	fmt.Printf("Part1: %d, took %s\n", res1, dur1)
 
@@ -38,24 +37,47 @@ func main() {
 	fmt.Printf("Part2: %d, took %s\n", res2, dur2)
 }
 
-func part2(grid Grid, goal Point) int {
-	res := math.MaxInt
-	for y, row := range grid {
-		for x, ch := range row {
-			if ch != 'a' {
+// Start from goal to find first 'a' position
+func part2(grid Grid, start Point) int {
+	var res int
+
+	type State struct {
+		pos    Point
+		length int
+	}
+	queue := []State{{pos: start}}
+	visited := make(map[Point]struct{})
+	visited[start] = struct{}{}
+
+	for len(queue) > 0 {
+		s := queue[0]
+		queue = queue[1:]
+
+		if grid[s.pos.Y][s.pos.X] == 'a' {
+			res = s.length
+			break
+		}
+
+		for _, dir := range DIRECTIONS {
+			newY, newX := s.pos.Y+dir.Y, s.pos.X+dir.X
+			if newY < 0 || newY >= len(grid) || newX < 0 || newX >= len(grid[0]) {
 				continue
 			}
-			start := Point{Y: y, X: x}
-			length := shortestLength(grid, start, goal)
-			if length != -1 {
-				res = min(res, length)
+			if grid[newY][newX] < grid[s.pos.Y][s.pos.X]-1 {
+				continue
 			}
+			newPos := Point{Y: newY, X: newX}
+			if _, ok := visited[newPos]; ok {
+				continue
+			}
+			visited[newPos] = struct{}{}
+			queue = append(queue, State{pos: newPos, length: s.length + 1})
 		}
 	}
 	return res
 }
 
-func shortestLength(grid Grid, start, goal Point) int {
+func part1(grid Grid, start, goal Point) int {
 	res := -1
 
 	type State struct {
