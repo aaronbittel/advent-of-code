@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
 )
@@ -39,6 +40,35 @@ func main() {
 		return part1(pairs)
 	})
 	fmt.Printf("Part1: %d, took %s\n", res1, dur1)
+
+	res2, dur2 := common.TimeIt(func() int {
+		return part2(pairs)
+	})
+	fmt.Printf("Part2: %d, took %s\n", res2, dur2)
+}
+
+func part2(pairs []Pair) int {
+	allPackets := make([]List, 0, len(pairs)*2+2)
+	for _, pair := range pairs {
+		allPackets = append(allPackets, pair.Left, pair.Right)
+	}
+	allPackets = append(allPackets, ParseList([]byte("[[2]]")))
+	allPackets = append(allPackets, ParseList([]byte("[[6]]")))
+
+	slices.SortFunc(allPackets, func(a, b List) int {
+		return b.Compare(a)
+	})
+
+	res := 1
+	for i, list := range allPackets {
+		if list.String() == "[[2]]" {
+			res *= (i + 1)
+		}
+		if list.String() == "[[6]]" {
+			res *= (i + 1)
+		}
+	}
+	return res
 }
 
 func part1(pairs []Pair) int {
@@ -51,19 +81,25 @@ func part1(pairs []Pair) int {
 	return res
 }
 
-func (p Pair) CorrectOrder() bool {
-	minLength := min(len(p.Left), len(p.Right))
+func (l List) Compare(other List) int {
+	minLength := min(len(l), len(other))
 	for i := range minLength {
-		lp, rp := p.Left[i], p.Right[i]
-		c := lp.Compare(rp)
-		switch c {
-		case 1:
-			return true
-		case -1:
-			return false
+		c := l[i].Compare(other[i])
+		if c != 0 {
+			return c
 		}
 	}
-	return len(p.Left) < len(p.Right)
+	lenDiff := len(l) - len(other)
+	if lenDiff < 0 {
+		return 1
+	} else if lenDiff > 0 {
+		return -1
+	}
+	return 0
+}
+
+func (p Pair) CorrectOrder() bool {
+	return p.Left.Compare(p.Right) == 1
 }
 
 func (le ListElement) Compare(other ListElement) int {
