@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"slices"
 )
 
 type Pos struct {
@@ -24,9 +25,71 @@ func main() {
 	sensors := parse(f)
 
 	res1, dur1 := common.TimeIt(func() int {
-		return part1(sensors, 2_000_000)
+		return part1(sensors, 10)
 	})
 	fmt.Printf("Part1: %d, took %s\n", res1, dur1)
+
+	res2, dur2 := common.TimeIt(func() int {
+		return part2(sensors, 4_000_000)
+	})
+	fmt.Printf("Part2: %d, took %s\n", res2, dur2)
+}
+
+type Interval struct {
+	Start, End int
+}
+
+func part2(sensors []Sensor, maxValue int) int {
+	var resY, resX int
+
+outer:
+	for row := range maxValue {
+		intervals := make([]Interval, 0, len(sensors))
+
+		for _, sensor := range sensors {
+			distToRow := common.AbsInt(sensor.Y - row)
+			totalDist := sensor.Dist()
+			dist := totalDist - distToRow
+			if dist < 0 {
+				continue
+			}
+			startX := max(sensor.X-dist, 0)
+			endX := min(sensor.X+dist, maxValue)
+			intervals = append(intervals, Interval{Start: startX, End: endX})
+		}
+		slices.SortFunc(intervals, func(a, b Interval) int {
+			if a.Start < b.Start {
+				return -1
+			}
+			if a.Start > b.Start {
+				return 1
+			}
+			return 0
+		})
+
+		x, hasGap := FindGap(intervals)
+		if hasGap {
+			resY = row
+			resX = x
+			break outer
+		}
+	}
+
+	return resX*4_000_000 + resY
+}
+
+func FindGap(intervals []Interval) (int, bool) {
+	res := intervals[0]
+
+	for _, interval := range intervals[1:] {
+		if res.End < interval.Start {
+			return res.End + 1, true
+		}
+		if res.End < interval.End {
+			res.End = interval.End
+		}
+	}
+	return 0, false
 }
 
 func part1(sensors []Sensor, row int) int {
