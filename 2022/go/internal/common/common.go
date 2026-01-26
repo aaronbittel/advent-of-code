@@ -36,3 +36,10 @@ func Assert(cond bool, msg string) {
 		panic("assertion failed: " + msg)
 	}
 }
+
+func AbsInt(x int) int {
+	if x < 0 {
+		return -x
+	}
+	return x
+}
