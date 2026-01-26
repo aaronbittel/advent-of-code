@@ -15,14 +15,16 @@ type Point struct {
 	Y, X int
 }
 
-type Grid map[Point]byte
+type Cell byte
 
 const (
-	ROCK  byte = '#'
-	AIR   byte = '.'
-	SAND  byte = 'o'
-	START byte = '+'
+	ROCK  Cell = '#'
+	AIR   Cell = '.'
+	SAND  Cell = 'o'
+	START Cell = '+'
 )
+
+type Grid map[Point]Cell
 
 var START_POINT = Point{Y: 0, X: 500}
 
@@ -55,7 +57,7 @@ func part2(grid Grid) int {
 		point Point
 	)
 	for res = 0; point != START_POINT; res++ {
-		point = grid.SandFallPart2(groundLevel + 1)
+		point, _ = grid.DropOne(groundLevel+1, false)
 	}
 	return res
 }
@@ -67,59 +69,48 @@ func part1(grid Grid) int {
 	}
 
 	var res int
-	for res = 0; grid.SandFall(groundLevel); res++ {
+	for {
+		_, done := grid.DropOne(groundLevel, true)
+		if done {
+			break
+		}
+		res++
 	}
 	return res
 }
 
-func (g Grid) SandFallPart2(groundLevel int) Point {
+func (g Grid) DropOne(groundLevel int, part1 bool) (Point, bool) {
 	var (
 		point   = START_POINT
-		falling bool
+		settled bool
 	)
 	for {
-		point, falling = g.NextPoint(point)
-		if !falling || point.Y == groundLevel {
+		point, settled = g.NextPoint(point)
+		if settled {
 			g[point] = SAND
-			return point
+			return point, false
+		}
+		if part1 && point.Y > groundLevel {
+			return point, true
+		}
+		if !part1 && point.Y == groundLevel {
+			g[point] = SAND
+			return point, false
 		}
 	}
 }
 
-func (g Grid) SandFall(groundLevel int) bool {
-	var (
-		point   = START_POINT
-		falling bool
-	)
-	for {
-		point, falling = g.NextPoint(point)
-		if !falling {
-			g[point] = SAND
-			return true
-		}
-		if point.Y > groundLevel {
-			return false
+var FALLING_DIRECTIONS = []Point{{1, 0}, {1, -1}, {1, 1}}
+
+func (g Grid) NextPoint(point Point) (Point, bool) {
+	for _, dir := range FALLING_DIRECTIONS {
+		newPoint := Point{Y: point.Y + dir.Y, X: point.X + dir.X}
+		if _, ok := g[newPoint]; !ok {
+			return newPoint, false
 		}
 	}
-}
 
-func (g Grid) NextPoint(p Point) (Point, bool) {
-	downPoint := Point{Y: p.Y + 1, X: p.X}
-	if _, ok := g[downPoint]; !ok {
-		return downPoint, true
-	}
-
-	diagLeftPoint := Point{Y: p.Y + 1, X: p.X - 1}
-	if _, ok := g[diagLeftPoint]; !ok {
-		return diagLeftPoint, true
-	}
-
-	diagRightPoint := Point{Y: p.Y + 1, X: p.X + 1}
-	if _, ok := g[diagRightPoint]; !ok {
-		return diagRightPoint, true
-	}
-
-	return p, false
+	return point, true
 }
 
 func parse(r io.Reader) Grid {
@@ -192,9 +183,9 @@ func (g Grid) String() string {
 	for y := minY - offsetY; y <= maxY+offsetY; y++ {
 		for x := minX - offsetX; x <= maxX+offsetX; x++ {
 			if ch, ok := g[Point{Y: y, X: x}]; ok {
-				sb.WriteByte(ch)
+				sb.WriteByte(byte(ch))
 			} else {
-				sb.WriteByte(AIR)
+				sb.WriteByte(byte(AIR))
 			}
 		}
 		sb.WriteByte('\n')
