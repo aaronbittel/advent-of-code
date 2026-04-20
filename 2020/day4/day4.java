@@ -1,3 +1,5 @@
+package day4;
+
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.util.Map;
@@ -7,6 +9,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.io.IOException;
 import java.util.function.Supplier;
+import common.Common;
 
 class Day4 {
 
@@ -96,14 +99,6 @@ class Day4 {
         return false;
     }
 
-    private static <T> void time(String label, Supplier<T> task) {
-        long start = System.nanoTime();
-        T result = task.get();
-        long end = System.nanoTime();
-        double seconds = (end - start) / 1_000_000_000.0;
-        System.out.printf("%s: %s, took %.5f seconds%n", label, result, seconds);
-    }
-
     public static void main(String[] args) {
         if (args.length < 1) {
             System.err.printf("Usage: java %s <input>%n", Day4.class.getSimpleName());
@@ -114,12 +109,12 @@ class Day4 {
         try {
             List<Map<String, String>> batches = Day4.parse(filename);
 
-            time("Part1", () -> batches.stream()
+            Common.time("Part1", () -> batches.stream()
                 .filter(Day4::isValidPassportPart1)
                 .count()
             );
 
-            time("Part2", () -> batches.stream()
+            Common.time("Part2", () -> batches.stream()
                 .filter(Day4::isValidPassportPart2)
                 .count()
             );

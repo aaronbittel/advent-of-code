@@ -1,9 +1,13 @@
+package day1;
+
 import java.util.List;
 import java.util.Collections;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.function.IntSupplier;
+
+import common.Common;
 
 class Day1 {
 
@@ -51,14 +55,6 @@ class Day1 {
         throw new IllegalStateException("No solution found");
     }
 
-    private static void time(String label, IntSupplier task) {
-        long start = System.nanoTime();
-        int result = task.getAsInt();
-        long end = System.nanoTime();
-        double seconds = (end - start) / 1_000_000_000.0;
-        System.out.printf("%s: %d, took %.5f seconds%n", label, result, seconds);
-    }
-
     public static void main(String[] args) {
         if (args.length < 1) {
             System.err.println(String.format("Usage: java %s <input>", Day1.class.getSimpleName()));
@@ -69,8 +65,8 @@ class Day1 {
         try {
             List<Integer> numbers = Day1.parse(filename);
 
-            Day1.time("Part1", () -> Day1.solvePart1(numbers));
-            Day1.time("Part2", () -> Day1.solvePart2(numbers));
+            Common.time("Part1", () -> Day1.solvePart1(numbers));
+            Common.time("Part2", () -> Day1.solvePart2(numbers));
         } catch(IOException e) {
             System.err.println(e.getMessage());
             System.exit(1);

@@ -1,3 +1,5 @@
+package day3;
+
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -7,6 +9,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.function.Supplier;
+
+import common.Common;
 
 class Point {
     private int row;
@@ -126,14 +130,6 @@ class Day3 {
         return new Grid(trees, rows, cols);
     }
 
-    private static <T> void time(String label, Supplier<T> task) {
-        long start = System.nanoTime();
-        T result = task.get();
-        long end = System.nanoTime();
-        double seconds = (end - start) / 1_000_000_000.0;
-        System.out.printf("%s: %s, took %.5f seconds%n", label, result, seconds);
-    }
-
     public static void main(String[] args) {
         if (args.length < 1) {
             System.err.printf("Usage: java %s <input>%n", Day3.class.getSimpleName());
@@ -144,7 +140,7 @@ class Day3 {
         try {
             Grid grid = Day3.parse(filename);
 
-            Day3.time("Part1", () -> Day3.countTreesWithSlope(grid, new Point(1, 3)));
+            Common.time("Part1", () -> Day3.countTreesWithSlope(grid, new Point(1, 3)));
 
             List<Point> slopes = List.of(
                 new Point(1, 1),
@@ -154,7 +150,7 @@ class Day3 {
                 new Point(2, 1)
             );
 
-            Day3.time("Part2", () -> slopes.stream()
+            Common.time("Part2", () -> slopes.stream()
                 .map(slope -> (long) Day3.countTreesWithSlope(grid, slope))
                 .reduce(1L, (acc, val) -> acc * val));
         } catch (IOException e) {

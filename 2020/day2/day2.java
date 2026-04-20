@@ -1,3 +1,5 @@
+package day2;
+
 import java.util.List;
 import java.util.stream.Stream;
 import java.io.IOException;
@@ -6,6 +8,8 @@ import java.nio.file.Path;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
+
+import common.Common;
 
 class Range {
     private int start;
@@ -81,14 +85,6 @@ class Day2 {
         throw new IllegalArgumentException("Illegal Input");
     }
 
-    private static <T> void time(String label, Supplier<T> task) {
-        long start = System.nanoTime();
-        T result = task.get();
-        long end = System.nanoTime();
-        double seconds = (end - start) / 1_000_000_000.0;
-        System.out.printf("%s: %s, took %.5f seconds%n", label, result, seconds);
-    }
-
     public static void main(String[] args) {
         if (args.length < 1) {
             System.err.printf("Usage: java %s <input>%n", Day2.class.getSimpleName());
@@ -98,10 +94,10 @@ class Day2 {
         String filename = args[0];
         try {
             List<PasswordLine> passwordLines = Day2.parse(filename);
-            Day2.time("Part1", () -> passwordLines.stream()
+            Common.time("Part1", () -> passwordLines.stream()
                 .filter(PasswordLine::isValidPart1)
                 .count());
-            Day2.time("Part2", () -> passwordLines.stream()
+            Common.time("Part2", () -> passwordLines.stream()
                 .filter(PasswordLine::isValidPart2)
                 .count());
         } catch(IOException e) {
