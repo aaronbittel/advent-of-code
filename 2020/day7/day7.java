@@ -67,28 +67,25 @@ class Bag {
 class Day7 {
 
     private static Map<String, List<Bag>> parse(String filename) throws IOException {
-        List<String> parsedLines = Files.lines(Path.of(filename))
+        return Files.lines(Path.of(filename))
             .map(line ->
                 line.substring(0, line.length() - 1)
-                    .replaceAll(" bags?", ""))
-            .collect(Collectors.toList());
-        Map<String, List<Bag>> rules = new HashMap<>();
-        for (String line : parsedLines) {
-            String[] parts = line.split(" contain ");
-            String key = parts[0].strip();
-            for (String val : parts[1].strip().split(", ")) {
-                String[] valParts = val.split(" ", 2);
-                Bag bag;
-                try {
-                    int count = Integer.parseInt(valParts[0]);
-                    bag = new Bag(count, valParts[1].strip());
-                } catch(NumberFormatException e) {
-                    bag = new Bag();
-                }
-                rules.computeIfAbsent(key, k -> new ArrayList<>()).add(bag);
-            }
-        }
-        return rules;
+                    .replaceAll(" bags?", "")
+                    .split(" contain ")
+            )
+            .collect(Collectors.toMap(
+                parts -> parts[0].trim(),
+                parts -> Arrays.stream(parts[1].split(", "))
+                    .map(Day7::strToBag)
+                    .collect(Collectors.toList())
+            ));
+    }
+
+    private static Bag strToBag(String s) {
+        if (s.trim().equals("no other")) return new Bag();
+        String[] parts = s.split(" ", 2);
+        int count = Integer.parseInt(parts[0]);
+        return new Bag(count, parts[1].trim());
     }
 
     public static int solvePart1(Map<String, List<String>> rules) {
