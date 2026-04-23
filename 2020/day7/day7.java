@@ -66,31 +66,7 @@ class Bag {
 
 class Day7 {
 
-    private static Map<Bag, List<Bag>> parsePart1(String filename) throws IOException {
-        List<String> lines = Files.readAllLines(Path.of(filename));
-
-        Map<Bag, List<Bag>> rules = new HashMap<>(lines.size());
-        for (String line : lines) {
-            String[] parts = line.split("contain", 2);
-            Bag value = new Bag(parts[0].strip().replace(" bags", ""));
-            String keyBags = parts[1].substring(0, parts[1].length() - 1);
-            for (String key : keyBags.split(", ")) {
-                String[] bagParts = key.strip().split(" ", 2);
-                Bag keyBag;
-                try {
-                    int count = Integer.valueOf(bagParts[0]);
-                    String desc = bagParts[1].replace(count == 1 ? " bag" : " bags", "");
-                    keyBag = new Bag(count, desc);
-                } catch(NumberFormatException e) {
-                    keyBag = new Bag();
-                }
-                rules.computeIfAbsent(keyBag, k -> new ArrayList<>()).add(value);
-            }
-        }
-        return rules;
-    }
-
-    private static Map<String, List<Bag>> parsePart2(String filename) throws IOException {
+    private static Map<String, List<Bag>> parse(String filename) throws IOException {
         List<String> parsedLines = Files.lines(Path.of(filename))
             .map(line ->
                 line.substring(0, line.length() - 1)
@@ -115,16 +91,16 @@ class Day7 {
         return rules;
     }
 
-    public static int solvePart1(Map<Bag, List<Bag>> rules) {
-        Set<Bag> result = new HashSet<>();
-        List<Bag> queue = new ArrayList<>(List.of(new Bag("shiny gold")));
+    public static int solvePart1(Map<String, List<String>> rules) {
+        Set<String> result = new HashSet<>();
+        List<String> queue = new ArrayList<>(List.of("shiny gold"));
         while (queue.size() > 0) {
-            Bag bag = queue.removeFirst();
-            List<Bag> bags = rules.get(bag);
-            if (bags == null) continue;
-            for (Bag b : bags) {
-                queue.add(b);
-                result.add(b);
+            String desc = queue.removeFirst();
+            List<String> descs = rules.get(desc);
+            if (descs == null) continue;
+            for (String d : descs) {
+                queue.add(d);
+                result.add(d);
             }
         }
         return result.size();
@@ -149,12 +125,19 @@ class Day7 {
 
         String filename = args[0];
         try {
-            Map<Bag, List<Bag>> rulesPart1 = parsePart1(filename);
+            Map<String, List<Bag>> rules= parse(filename);
 
-            Common.time("Part1", () -> solvePart1(rulesPart1));
+            Common.time("Part1", () -> {
+                Map<String, List<String>> part1Map = new HashMap<>();
+                for (Map.Entry<String, List<Bag>> entry : rules.entrySet()) {
+                    for (Bag bag : entry.getValue()) {
+                        part1Map.computeIfAbsent(bag.getDesc(), k -> new ArrayList<>()).add(entry.getKey());
+                    }
+                }
+                return solvePart1(part1Map);
+            });
 
-            Map<String, List<Bag>> rulesPart2 = parsePart2(filename);
-            Common.time("Part2", () -> solvePart2(rulesPart2, "shiny gold"));
+            Common.time("Part2", () -> solvePart2(rules, "shiny gold"));
         } catch(IOException e) {
             System.err.println(e.getMessage());
             System.exit(1);
