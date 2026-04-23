@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.Set;
 import java.util.HashSet;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import java.io.IOException;
 
 import common.Common;
@@ -31,6 +32,18 @@ class Bag {
         this(0, "");
     }
 
+    public boolean isEmpty() {
+        return desc.isEmpty() && count == 0;
+    }
+
+    public int getCount() {
+        return count;
+    }
+
+    public String getDesc() {
+        return desc;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -46,13 +59,14 @@ class Bag {
 
     @Override
     public String toString() {
-        return desc.equals("") ? "NONE" : desc;
+        if (isEmpty()) return "NONE";
+        return desc + " (" + count + ")";
     }
 }
 
 class Day7 {
 
-    private static Map<Bag, List<Bag>> parse(String filename) throws IOException {
+    private static Map<Bag, List<Bag>> parsePart1(String filename) throws IOException {
         List<String> lines = Files.readAllLines(Path.of(filename));
 
         Map<Bag, List<Bag>> rules = new HashMap<>(lines.size());
@@ -76,6 +90,31 @@ class Day7 {
         return rules;
     }
 
+    private static Map<String, List<Bag>> parsePart2(String filename) throws IOException {
+        List<String> parsedLines = Files.lines(Path.of(filename))
+            .map(line ->
+                line.substring(0, line.length() - 1)
+                    .replaceAll(" bags?", ""))
+            .collect(Collectors.toList());
+        Map<String, List<Bag>> rules = new HashMap<>();
+        for (String line : parsedLines) {
+            String[] parts = line.split(" contain ");
+            String key = parts[0].strip();
+            for (String val : parts[1].strip().split(", ")) {
+                String[] valParts = val.split(" ", 2);
+                Bag bag;
+                try {
+                    int count = Integer.parseInt(valParts[0]);
+                    bag = new Bag(count, valParts[1].strip());
+                } catch(NumberFormatException e) {
+                    bag = new Bag();
+                }
+                rules.computeIfAbsent(key, k -> new ArrayList<>()).add(bag);
+            }
+        }
+        return rules;
+    }
+
     public static int solvePart1(Map<Bag, List<Bag>> rules) {
         Set<Bag> result = new HashSet<>();
         List<Bag> queue = new ArrayList<>(List.of(new Bag("shiny gold")));
@@ -91,6 +130,17 @@ class Day7 {
         return result.size();
     }
 
+    private static int solvePart2(Map<String, List<Bag>> rules, String cur) {
+        int count = 0;
+        List<Bag> bags = rules.get(cur);
+        if (bags == null) return count;
+        for (Bag b : bags) {
+            count += b.getCount() * (1 + solvePart2(rules, b.getDesc()));
+        }
+
+        return count;
+    }
+
     public static void main(String[] args) {
         if (args.length < 1) {
             System.err.printf("Usage: java %s <input>%n", Day7.class.getSimpleName());
@@ -99,9 +149,12 @@ class Day7 {
 
         String filename = args[0];
         try {
-            Map<Bag, List<Bag>> rules = parse(filename);
+            Map<Bag, List<Bag>> rulesPart1 = parsePart1(filename);
 
-            Common.time("Part1", () -> solvePart1(rules));
+            Common.time("Part1", () -> solvePart1(rulesPart1));
+
+            Map<String, List<Bag>> rulesPart2 = parsePart2(filename);
+            Common.time("Part2", () -> solvePart2(rulesPart2, "shiny gold"));
         } catch(IOException e) {
             System.err.println(e.getMessage());
             System.exit(1);
