@@ -19,7 +19,7 @@ class Day9 {
 
     private static long solvePart1(List<Long> nums, int windowSize) {
         int cur = 0;
-        while (cur + windowSize < nums.size()) {
+        while (cur + windowSize + 1 < nums.size()) {
             boolean found = false;
             for (int i = cur; i < cur + windowSize; ++i) {
                 long a = nums.get(i);
@@ -46,7 +46,7 @@ class Day9 {
             if (currentSum < invalidNumber) {
                 right += 1;
                 currentSum += nums.get(right);
-            } else if (currentSum > invalidNumber) {
+            } else {
                 currentSum -= nums.get(left);
                 left += 1;
             }
