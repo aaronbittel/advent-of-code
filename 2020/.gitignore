@@ -1,1 +1,4 @@
 *.class
+.idea/
+2020.iml
+out/
