@@ -4,6 +4,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.io.IOException;
@@ -42,25 +44,25 @@ class Day10 {
     }
 
     private static long solvePart2(List<Integer> nums) {
-        long result = 0;
         nums.addFirst(0);
         nums.addLast(nums.getLast() + 3);
-        List<Integer> queue = new ArrayList<>(List.of(0));
+        return dfs(nums, 0, new HashMap<>());
+    }
 
-        while (!queue.isEmpty()) {
-            int index = queue.removeFirst();
-            int current = nums.get(index);
-            if (current == nums.getLast()) {
-                result++;
-                continue;
-            }
-            for (int i = index + 1; i <= index + 3 && i < nums.size(); ++i) {
-                if (nums.get(i) - current > 3) break;
-                queue.add(i);
-            }
+    private static long dfs(List<Integer> nums, int index, Map<Integer, Long> memo) {
+        if (index == nums.size() - 1) return 1;
+        if (memo.containsKey(index)) return memo.get(index);
+
+        int current = nums.get(index);
+        long ways = 0;
+
+        for (int i = index + 1; i <= index + 3 && i < nums.size(); ++i) {
+            if (nums.get(i) - current > 3) break;
+            ways += dfs(nums, i, memo);
         }
 
-        return result;
+        memo.put(index, ways);
+        return ways;
     }
 
     static void main(String[] args) {
