@@ -2,6 +2,7 @@ package day11;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
@@ -10,93 +11,128 @@ import java.io.IOException;
 
 import common.Common;
 
-record Position(int y, int x) {}
+enum SeatState {
+    FLOOR('.'),
+    OCCUPIED('#'),
+    EMPTY('L');
 
-record Seats(Map<Position, Boolean> seats, int rows, int cols) {
-    private static final char OCCUPIED = '#';
-    private static final char EMPTY = 'L';
-    private static final char FREESPACE = '.';
+    private final char symbol;
 
-    public Seats(Seats seats) {
-        Map<Position, Boolean> seatsMap = new HashMap<>();
-        for (Map.Entry<Position, Boolean> entry : seats.seats.entrySet()) {
-            Position key = entry.getKey();
-            seatsMap.put(new Position(key.y(), key.x()), entry.getValue());
-        }
-        this(seatsMap, seats.rows, seats.cols);
+    SeatState(char symbol) {
+        this.symbol = symbol;
     }
 
-    public int countCloseNeighbours(Position pos) {
-        requireValidPosition(pos);
+    public char getSymbol() {
+        return symbol;
+    }
+}
+
+record Seats(SeatState[][] seats) {
+    public Seats(Seats original) {
+        SeatState[][] copy = new SeatState[original.seats.length][];
+
+        for (int i = 0; i < original.seats.length; i++) {
+            copy[i] = original.seats[i].clone();
+        }
+
+        this(copy);
+    }
+
+    public int countCloseNeighbours(int y, int x) {
         int count = 0;
         for (int dy = -1; dy <= 1; ++dy) {
+            int newY = y + dy;
+            if (newY < 0 || newY >= getHeight()) continue;
             for (int dx = -1; dx <= 1; ++dx) {
                 if (dy == 0 && dx == 0) continue;
-                Position newPos = new Position(pos.y() + dy, pos.x() + dx);
-                if (seats.containsKey(newPos) && seats.get(newPos)) count++;
+                int newX = x + dx;
+                if (newX < 0 || newX >= getWidth()) continue;
+                if (isOccupied(newY, newX)) count++;
             }
         }
         return count;
     }
 
-    private boolean insideSeats(Position pos) {
-        return pos.y() >= 0 && pos.y() < rows && pos.x() >= 0 && pos.x() < cols;
+    public boolean isOccupied(int y, int x) {
+        return seats[y][x] == SeatState.OCCUPIED;
     }
 
-    public int countNeighbours(Position pos) {
-        requireValidPosition(pos);
+    public boolean isEmpty(int y, int x) {
+        return seats[y][x] == SeatState.EMPTY;
+    }
+
+    public boolean isFloor(int y, int x) {
+        return seats[y][x] == SeatState.FLOOR;
+    }
+
+    public int getHeight() {
+        return seats.length;
+    }
+
+    public int getWidth() {
+        if (seats.length > 0) {
+            return seats[0].length;
+        }
+        return 0;
+    }
+
+    public int countNeighbours(int y, int x) {
         int count = 0;
         for (int dy = -1; dy <= 1; ++dy) {
+            int newY = y + dy;
+            if (newY < 0 || newY >= getHeight()) continue;
             for (int dx = -1; dx <= 1; ++dx) {
                 if (dy == 0 && dx == 0) continue;
-                Position newPos = new Position(pos.y() + dy, pos.x() + dx);
-                while(insideSeats(newPos)) {
-                    if (!seats.containsKey(newPos)) {
-                        newPos = new Position(newPos.y() + dy, newPos.x() + dx);
-                        continue;
-                    }
-                    if (seats.get(newPos)) {
-                        count++;
-                    }
-                    break;
+                int newX = x + dx;
+                if (newX < 0 || newX >= getWidth()) continue;
+                newY = y + dy; // reset because newY is mutated during directional scan
+                while(isValidPosition(newY, newX) && isFloor(newY, newX)) {
+                    newY += dy;
+                    newX += dx;
                 }
+                if (isValidPosition(newY, newX) && isOccupied(newY, newX)) count++;
             }
         }
         return count;
     }
 
     public int countOccupied() {
-        return (int)seats.values().stream().filter(s -> s).count();
-    }
-
-    public void occupy(Position pos) {
-        requireValidPosition(pos);
-        seats.put(pos, true);
-    }
-
-    public void empty(Position pos) {
-        requireValidPosition(pos);
-        seats.put(pos, false);
-    }
-
-    private void requireValidPosition(Position pos) {
-        if (!seats.containsKey(pos)) {
-            throw new IllegalArgumentException("Invalid position: " + pos);
+        int count = 0;
+        for (int y = 0; y < getHeight(); ++y) {
+            for (int x = 0; x < getWidth(); ++x) {
+                if (isOccupied(y, x)) count++;
+            }
         }
+        return count;
+    }
+
+    public void occupy(int y, int x) {
+        seats[y][x] = SeatState.OCCUPIED;
+    }
+
+    public void empty(int y, int x) {
+        seats[y][x] = SeatState.EMPTY;
+    }
+
+    public boolean isValidPosition(int y, int x) {
+        return y >= 0 && y < getHeight() && x >= 0 && x < getWidth();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Seats)) return false;
+        Seats other = (Seats)o;
+        return Arrays.deepEquals(this.seats, other.seats);
     }
 
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder(rows * (cols + 1));
+        StringBuilder sb = new StringBuilder(getHeight() * (getWidth() + 1));
 
-        for (int y = 0; y < rows; ++y) {
-            for (int x = 0; x < cols; ++x) {
-                Position pos = new Position(y, x);
-                if (seats.containsKey(pos)) {
-                    sb.append(seats.get(pos) ? OCCUPIED : EMPTY);
-                } else {
-                    sb.append(FREESPACE);
-                }
+        for (int y = 0; y < getHeight(); ++y) {
+            for (int x = 0; x < getWidth(); ++x) {
+                sb.append(seats[y][x].getSymbol());
             }
             sb.append('\n');
         }
@@ -108,19 +144,19 @@ record Seats(Map<Position, Boolean> seats, int rows, int cols) {
 class Day11 {
 
     private static Seats parse(String filename) throws IOException {
-        Map<Position, Boolean> seats = new HashMap<>();
         List<String> lines = Files.readAllLines(Path.of(filename));
+        SeatState[][] seats = new SeatState[lines.size()][];
 
         for (int y = 0; y < lines.size(); ++y) {
             String line = lines.get(y);
+            SeatState[] row = new SeatState[line.length()];
             for (int x = 0; x < line.length(); ++x) {
-                if (line.charAt(x) == 'L') {
-                    seats.put(new Position(y, x), false);
-                }
+                row[x] = line.charAt(x) == 'L' ? SeatState.EMPTY : SeatState.FLOOR;
             }
+            seats[y] = row;
         }
 
-        return new Seats(seats, lines.size(), lines.getFirst().length());
+        return new Seats(seats);
     }
 
     private static int solve(Seats seats, Function<Seats, Seats> applyRules) {
@@ -137,24 +173,28 @@ class Day11 {
 
     private static Seats applyRulesPart1(Seats current) {
         Seats next = new Seats(current);
-        for (Map.Entry<Position, Boolean> seat : current.seats().entrySet()) {
-            Position pos = seat.getKey();
-            Boolean isOccupied = seat.getValue();
-            int count = current.countCloseNeighbours(pos);
-            if (!isOccupied && count == 0) next.occupy(pos);
-            else if (isOccupied && count >= 4) next.empty(pos);
+        for (int y = 0; y < current.getHeight(); ++y) {
+            for (int x = 0; x < current.getWidth(); ++x) {
+                if (current.isFloor(y, x)) continue;
+                boolean isOccupied = current.isOccupied(y, x);
+                int count = current.countCloseNeighbours(y, x);
+                if (!isOccupied && count == 0) next.occupy(y, x);
+                else if (isOccupied && count >= 4) next.empty(y, x);
+            }
         }
         return next;
     }
 
     private static Seats applyRulesPart2(Seats current) {
         Seats next = new Seats(current);
-        for (Map.Entry<Position, Boolean> seat : current.seats().entrySet()) {
-            Position pos = seat.getKey();
-            Boolean isOccupied = seat.getValue();
-            int count = current.countNeighbours(pos);
-            if (!isOccupied && count == 0) next.occupy(pos);
-            else if (isOccupied && count >= 5) next.empty(pos);
+        for (int y = 0; y < current.getHeight(); ++y) {
+            for (int x = 0; x < current.getWidth(); ++x) {
+                if (current.isFloor(y, x)) continue;
+                boolean isOccupied = current.isOccupied(y, x);
+                int count = current.countNeighbours(y, x);
+                if (!isOccupied && count == 0) next.occupy(y, x);
+                else if (isOccupied && count >= 5) next.empty(y, x);
+            }
         }
         return next;
     }
