@@ -5,6 +5,7 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
+import java.util.function.Function;
 import java.io.IOException;
 
 import common.Common;
@@ -20,12 +21,26 @@ record Seats(Map<Position, Boolean> seats, int rows, int cols) {
         Map<Position, Boolean> seatsMap = new HashMap<>();
         for (Map.Entry<Position, Boolean> entry : seats.seats.entrySet()) {
             Position key = entry.getKey();
-            seatsMap.put(
-                new Position(key.y(), key.x()),
-                Boolean.valueOf(entry.getValue())
-            );
+            seatsMap.put(new Position(key.y(), key.x()), entry.getValue());
         }
         this(seatsMap, seats.rows, seats.cols);
+    }
+
+    public int countCloseNeighbours(Position pos) {
+        requireValidPosition(pos);
+        int count = 0;
+        for (int dy = -1; dy <= 1; ++dy) {
+            for (int dx = -1; dx <= 1; ++dx) {
+                if (dy == 0 && dx == 0) continue;
+                Position newPos = new Position(pos.y() + dy, pos.x() + dx);
+                if (seats.containsKey(newPos) && seats.get(newPos)) count++;
+            }
+        }
+        return count;
+    }
+
+    private boolean insideSeats(Position pos) {
+        return pos.y() >= 0 && pos.y() < rows && pos.x() >= 0 && pos.x() < cols;
     }
 
     public int countNeighbours(Position pos) {
@@ -35,7 +50,16 @@ record Seats(Map<Position, Boolean> seats, int rows, int cols) {
             for (int dx = -1; dx <= 1; ++dx) {
                 if (dy == 0 && dx == 0) continue;
                 Position newPos = new Position(pos.y() + dy, pos.x() + dx);
-                if (seats.containsKey(newPos) && seats.get(newPos)) count++;
+                while(insideSeats(newPos)) {
+                    if (!seats.containsKey(newPos)) {
+                        newPos = new Position(newPos.y() + dy, newPos.x() + dx);
+                        continue;
+                    }
+                    if (seats.get(newPos)) {
+                        count++;
+                    }
+                    break;
+                }
             }
         }
         return count;
@@ -99,24 +123,38 @@ class Day11 {
         return new Seats(seats, lines.size(), lines.getFirst().length());
     }
 
-    private static int solvePart1(Seats seats) {
+    private static int solve(Seats seats, Function<Seats, Seats> applyRules) {
         Seats current = new Seats(seats);
-        Seats next = applyRules(current);
+        Seats next = applyRules.apply(current);
+
         while (!current.equals(next)) {
             current = next;
-            next = applyRules(current);
+            next = applyRules.apply(current);
         }
+
         return next.countOccupied();
     }
 
-    private static Seats applyRules(Seats current) {
+    private static Seats applyRulesPart1(Seats current) {
+        Seats next = new Seats(current);
+        for (Map.Entry<Position, Boolean> seat : current.seats().entrySet()) {
+            Position pos = seat.getKey();
+            Boolean isOccupied = seat.getValue();
+            int count = current.countCloseNeighbours(pos);
+            if (!isOccupied && count == 0) next.occupy(pos);
+            else if (isOccupied && count >= 4) next.empty(pos);
+        }
+        return next;
+    }
+
+    private static Seats applyRulesPart2(Seats current) {
         Seats next = new Seats(current);
         for (Map.Entry<Position, Boolean> seat : current.seats().entrySet()) {
             Position pos = seat.getKey();
             Boolean isOccupied = seat.getValue();
             int count = current.countNeighbours(pos);
             if (!isOccupied && count == 0) next.occupy(pos);
-            else if (isOccupied && count >= 4) next.empty(pos);
+            else if (isOccupied && count >= 5) next.empty(pos);
         }
         return next;
     }
@@ -131,7 +169,8 @@ class Day11 {
         try {
             Seats seats = parse(filename);
 
-            Common.time("Part1", () -> solvePart1(seats));
+            Common.time("Part1", () -> solve(seats, Day11::applyRulesPart1));
+            Common.time("Part2", () -> solve(seats, Day11::applyRulesPart2));
         } catch(IOException e) {
             System.err.println(e.getMessage());
             System.exit(1);
