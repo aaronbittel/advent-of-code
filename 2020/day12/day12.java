@@ -28,35 +28,100 @@ enum Direction {
 
 record Move(Direction dir, int value) implements Actionable {
     public void apply(State state) {
-        switch(dir) {
-            case NORTH -> state.north += value;
-            case SOUTH -> state.north -= value;
-            case EAST  -> state.east += value;
-            case WEST  -> state.east -= value;
-        };
+        state.move(dir, value);
     }
 }
 
 record Turn(int degrees) implements Actionable {
     public void apply(State state) {
-        state.facing = state.facing.turn(degrees);
+        state.turn(degrees);
     }
 }
 
 record Forward(int value) implements Actionable {
     public void apply(State state) {
-        new Move(state.facing, value).apply(state);
+        state.forward(value);
     }
 }
 
-class State {
+interface State {
+    void move(Direction dir, int value);
+    void forward(int value);
+    void turn(int degrees);
+    int manhattenDistance();
+}
+
+class ShipState implements State {
     int north = 0;
     int east = 0;
     Direction facing = Direction.EAST;
 
+    public void move(Direction dir, int value) {
+        switch(dir) {
+            case NORTH -> north += value;
+            case SOUTH -> north -= value;
+            case EAST  -> east += value;
+            case WEST  -> east -= value;
+        }
+    }
+
+    public void forward(int value) {
+        move(facing, value);
+    }
+
+    public void turn(int degrees) {
+        facing = facing.turn(degrees);
+    }
+
+    public int manhattenDistance() {
+        return Math.abs(north) + Math.abs(east);
+    }
+
     @Override
     public String toString() {
         return String.format("North: %d, East: %d, Facing: %s", north, east, facing);
+    }
+}
+
+class WaypointState implements State {
+    int waypointNorth = 1;
+    int waypointEast = 10;
+
+    int north = 0;
+    int east = 0;
+
+    public void move(Direction dir, int value) {
+        switch(dir) {
+            case NORTH -> waypointNorth += value;
+            case SOUTH -> waypointNorth -= value;
+            case EAST  -> waypointEast += value;
+            case WEST  -> waypointEast -= value;
+        }
+    }
+
+    public void forward(int value) {
+        north += waypointNorth * value;
+        east  += waypointEast  * value;
+    }
+
+    public void turn(int degrees) {
+        int times = Math.floorMod(degrees / 90, 4);
+        for (int i = 0; i < times; i++) {
+            int tmp = waypointNorth;
+            waypointNorth = -waypointEast;
+            waypointEast = tmp;
+        }
+    }
+
+    public int manhattenDistance() {
+        return Math.abs(north) + Math.abs(east);
+    }
+
+    @Override
+    public String toString() {
+        return String.format(
+            "Ship: North: %d, East: %d; Waypont: North %d, East: %d",
+                north, east, waypointNorth, waypointEast);
     }
 }
 
@@ -84,12 +149,22 @@ class Day12 {
     }
 
     private static int solvePart1(List<Actionable> actions) {
-        State state = new State();
+        State ship = new ShipState();
         for (Actionable action : actions) {
-            action.apply(state);
+            action.apply(ship);
         }
 
-        return Math.abs(state.north) + Math.abs(state.east);
+        return ship.manhattenDistance();
+    }
+
+    private static int solvePart2(List<Actionable> actions) {
+        State waypoint = new WaypointState();
+
+        for (Actionable action : actions) {
+            action.apply(waypoint);
+        }
+
+        return waypoint.manhattenDistance();
     }
 
     static void main(String[] args) {
@@ -103,6 +178,7 @@ class Day12 {
             List<Actionable> actions = parse(filename);
 
             Common.time("Part1", () -> solvePart1(actions));
+            Common.time("Part2", () -> solvePart2(actions));
         } catch(IOException e) {
             System.err.println(e.getMessage());
             System.exit(1);
