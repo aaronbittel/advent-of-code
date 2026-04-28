@@ -9,94 +9,87 @@ import java.util.stream.Stream;
 
 import common.Common;
 
-enum Action {
+interface Actionable {
+    void apply(State state);
+}
+
+enum Direction {
     NORTH,
-    SOUTH,
     EAST,
-    WEST,
-    LEFT,
-    RIGHT,
-    FORWARD;
+    SOUTH,
+    WEST;
 
-    public Action calculateFacing(int value) {
-        return switch(this) {
-            case NORTH -> valToDirection(Math.floorMod(  0 + value, 360));
-            case EAST  -> valToDirection(Math.floorMod( 90 + value, 360));
-            case SOUTH -> valToDirection(Math.floorMod(180 + value, 360));
-            case WEST  -> valToDirection(Math.floorMod(270 + value, 360));
-            default -> throw new IllegalArgumentException(
-                "Can only be called when Action is one of "
-                + "'NORTH', 'SOUTH', 'EAST' or 'WEST'");
-        };
+    public Direction turn(int degrees) {
+        int steps = Math.floorMod(degrees / 90, 4);
+        int idx = (ordinal() + steps) % 4;
+        return values()[idx];
     }
+}
 
-    private static Action valToDirection(int value) {
-        return switch(value) {
-            case 0 -> NORTH;
-            case 90 -> EAST;
-            case 180 -> SOUTH;
-            case 270 -> WEST;
-            default -> throw new IllegalArgumentException(
-                "Can only be called when Action is one of "
-                + "'NORTH', 'SOUTH', 'EAST' or 'WEST'");
+record Move(Direction dir, int value) implements Actionable {
+    public void apply(State state) {
+        switch(dir) {
+            case NORTH -> state.north += value;
+            case SOUTH -> state.north -= value;
+            case EAST  -> state.east += value;
+            case WEST  -> state.east -= value;
         };
     }
 }
 
-record Instruction(Action action, int value) {}
+record Turn(int degrees) implements Actionable {
+    public void apply(State state) {
+        state.facing = state.facing.turn(degrees);
+    }
+}
+
+record Forward(int value) implements Actionable {
+    public void apply(State state) {
+        new Move(state.facing, value).apply(state);
+    }
+}
+
+class State {
+    int north = 0;
+    int east = 0;
+    Direction facing = Direction.EAST;
+
+    @Override
+    public String toString() {
+        return String.format("North: %d, East: %d, Facing: %s", north, east, facing);
+    }
+}
 
 class Day12 {
 
-    private static List<Instruction> parse(String filename) throws IOException {
+    private static List<Actionable> parse(String filename) throws IOException {
         try(Stream<String> lines = Files.lines(Path.of(filename))) {
-            return lines.map(Day12::lineToInstruction)
+            return lines.map(Day12::lineToActionable)
                         .collect(Collectors.toList());
         }
     }
 
-    private static Instruction lineToInstruction(String line) {
+    private static Actionable lineToActionable(String line) {
         int value = Integer.parseInt(line.substring(1));
-        Action action = switch (line.charAt(0)) {
-            case 'N' -> Action.NORTH;
-            case 'S' -> Action.SOUTH;
-            case 'E' -> Action.EAST;
-            case 'W' -> Action.WEST;
-            case 'L' -> Action.LEFT;
-            case 'R' -> Action.RIGHT;
-            case 'F' -> Action.FORWARD;
+        return switch (line.charAt(0)) {
+            case 'N' -> new Move(Direction.NORTH, value);
+            case 'S' -> new Move(Direction.SOUTH, value);
+            case 'E' -> new Move(Direction.EAST, value);
+            case 'W' -> new Move(Direction.WEST, value);
+            case 'L' -> new Turn(-value);
+            case 'R' -> new Turn(value);
+            case 'F' -> new Forward(value);
             default -> throw new IllegalArgumentException("Illegal action");
         };
-        return new Instruction(action, value);
     }
 
-    private static int solvePart1(List<Instruction> instructions) {
-        int north = 0;
-        int east = 0;
-        Action facing = Action.EAST;
-
-        for (Instruction inst : instructions) {
-            switch(inst.action()) {
-                case NORTH: north += inst.value(); break;
-                case SOUTH: north -= inst.value(); break;
-                case EAST: east += inst.value(); break;
-                case WEST: east -= inst.value(); break;
-                case LEFT: facing = facing.calculateFacing(-inst.value()); break;
-                case RIGHT: facing = facing.calculateFacing(inst.value()); break;
-                case FORWARD: {
-                    switch(facing) {
-                        case NORTH: north += inst.value(); break;
-                        case SOUTH: north -= inst.value(); break;
-                        case EAST: east += inst.value(); break;
-                        case WEST: east -= inst.value(); break;
-                        default: throw new IllegalArgumentException(
-                            "Can only be called when Action is one of "
-                            + "'NORTH', 'SOUTH', 'EAST' or 'WEST'");
-                    };
-                }
-            };
+    private static int solvePart1(List<Actionable> actions) {
+        State state = new State();
+        for (Actionable action : actions) {
+            action.apply(state);
         }
 
-        return Math.abs(north) + Math.abs(east);
+        return Math.abs(state.north) + Math.abs(state.east);
     }
 
     static void main(String[] args) {
@@ -107,9 +100,9 @@ class Day12 {
 
         String filename = args[0];
         try {
-            List<Instruction> instructions = parse(filename);
+            List<Actionable> actions = parse(filename);
 
-            Common.time("Part1", () -> solvePart1(instructions));
+            Common.time("Part1", () -> solvePart1(actions));
         } catch(IOException e) {
             System.err.println(e.getMessage());
             System.exit(1);
