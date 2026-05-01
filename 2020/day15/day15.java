@@ -20,7 +20,7 @@ class Day15 {
         return nums;
     }
 
-    private static int solvePart1(List<Integer> startingNums) {
+    private static int solve(List<Integer> startingNums, int limit) {
         if (startingNums.isEmpty()) {
             throw new IllegalArgumentException("startingNums must not be empty");
         }
@@ -34,7 +34,7 @@ class Day15 {
         int turn = startingNums.size();
         int lastNumber = startingNums.getLast();
 
-        for (; turn < 2020; ++turn) {
+        for (; turn < limit; ++turn) {
             if (mem.containsKey(lastNumber)) {
                 int lastNumberTurn = mem.get(lastNumber);
                 mem.put(lastNumber, turn);
@@ -59,7 +59,8 @@ class Day15 {
         try {
             List<Integer> startingNums = parse(filename);
 
-            Common.time("Part1", () -> solvePart1(startingNums));
+            Common.time("Part1", () -> solve(startingNums, 2020));
+            Common.time("Part2", () -> solve(startingNums, 30000000));
         } catch(IOException e) {
             System.err.println(e.getMessage());
             System.exit(1);
