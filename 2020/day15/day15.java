@@ -25,24 +25,19 @@ class Day15 {
             throw new IllegalArgumentException("startingNums must not be empty");
         }
 
-        Map<Integer, Integer> mem = new HashMap<>();
+        int[] mem = new int[limit];
+
         for (int i = 0; i < startingNums.size() - 1; i++) {
-            int num = startingNums.get(i);
-            mem.put(num, i+1);
+            mem[startingNums.get(i)] = i + 1;
         }
 
+        int lastNumber = startingNums.get(startingNums.size() - 1);
         int turn = startingNums.size();
-        int lastNumber = startingNums.getLast();
 
-        for (; turn < limit; ++turn) {
-            if (mem.containsKey(lastNumber)) {
-                int lastNumberTurn = mem.get(lastNumber);
-                mem.put(lastNumber, turn);
-                lastNumber = turn - lastNumberTurn;
-            } else {
-                mem.put(lastNumber, turn);
-                lastNumber = 0;
-            }
+        for (; turn < limit; turn++) {
+            int prevTurn = mem[lastNumber];
+            mem[lastNumber] = turn;
+            lastNumber = (prevTurn == 0) ? 0 : (turn - prevTurn);
         }
 
         return lastNumber;
