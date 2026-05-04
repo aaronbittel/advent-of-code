@@ -3,7 +3,9 @@ package day18;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -12,51 +14,46 @@ import common.Common;
 enum Op {
     ADDITION,
     MULTIPLICATION
-};
+}
 
-class Stack {
+class EvalStack {
 
-    private List<Long> numbers;
-    private List<Op> operations;
+    private final Deque<Long> numbers;
+    private final Deque<Op> operators;
 
-    public Stack() {
-        this.numbers = new ArrayList<>();
-        this.operations = new ArrayList<>();
+    public EvalStack() {
+        this.numbers = new ArrayDeque<>();
+        this.operators = new ArrayDeque<>();
     }
 
     public long result() {
-        if (numbers.size() == 1 && operations.isEmpty()) {
+        if (numbers.size() == 1 && operators.isEmpty()) {
             return numbers.getFirst();
         }
         throw new IllegalStateException("Calling 'result' in invalid state");
     }
 
-    public boolean isEmpty() {
-        return numbers.isEmpty() && operations.isEmpty();
+    public void evaluateTop() {
+        long a = numbers.pop();
+        long b = numbers.pop();
+        Op op = operators.pop();
+        long r = switch (op) {
+            case ADDITION -> a + b;
+            case MULTIPLICATION -> a * b;
+        };
+        numbers.addLast(r);
     }
 
-    public int sizeNum() {
-        return numbers.size();
-    }
-
-    public int sizeOp() {
-        return operations.size();
-    }
-
-    public long popNum() {
-        return numbers.removeLast();
-    }
-
-    public Op popOp() {
-        return operations.removeLast();
+    public boolean canEvaluate() {
+        return numbers.size() >= 2 && !operators.isEmpty();
     }
 
     public void push(long number) {
-        numbers.add(number);
+        numbers.addLast(number);
     }
 
     public void push(Op op) {
-        operations.add(op);
+        operators.addLast(op);
     }
 
     @Override
@@ -67,34 +64,35 @@ class Stack {
             sb.append("    ").append(num).append("\n");
         }
         sb.append("Ops:").append("\n");
-        for (Op op : operations.reversed()) {
+        for (Op op : operators.reversed()) {
             sb.append("    ").append(op).append("\n");
         }
         return sb.toString();
     }
 }
 
-class Parser {
+class ImParser {
 
     private final String source;
     private int index = 0;
-    private List<Stack> stacks;
+    private final List<EvalStack> stacks;
 
-    public Parser(String source) {
+    public ImParser(String source) {
         this.source = source;
-        this.index = 0;
-        this.stacks = new ArrayList<>(List.of(new Stack()));
+        this.stacks = new ArrayList<>(List.of(new EvalStack()));
     }
 
     public long evaluate() {
-        while(index < source.length()) {
+        while (index < source.length()) {
             skipWhitespace();
 
             char c = current();
             if (Character.isDigit(c)) {
                 long number = parseNumber();
                 stacks.getLast().push(number);
-                if (canEvalulate()) pushEvalResult();
+                if (stacks.getLast().canEvaluate()) {
+                    stacks.getLast().evaluateTop();
+                }
             } else if (c == '+') {
                 stacks.getLast().push(Op.ADDITION);
                 advance();
@@ -102,35 +100,22 @@ class Parser {
                 stacks.getLast().push(Op.MULTIPLICATION);
                 advance();
             } else if (c == '(') {
-                stacks.add(new Stack());
+                stacks.add(new EvalStack());
                 advance();
             } else if (c == ')') {
                 long r = stacks.getLast().result();
                 stacks.removeLast();
                 stacks.getLast().push(r);
                 advance();
-                if (canEvalulate()) pushEvalResult();
+                if (stacks.getLast().canEvaluate()) {
+                    stacks.getLast().evaluateTop();
+                }
             } else {
                 throw new IllegalStateException("Illegal character: " + c);
             }
 
         }
         return stacks.getLast().result();
-    }
-
-    private void pushEvalResult() {
-        long a = stacks.getLast().popNum();
-        long b = stacks.getLast().popNum();
-        Op op = stacks.getLast().popOp();
-        long r = switch (op) {
-            case ADDITION -> a + b;
-            case MULTIPLICATION -> a * b;
-        };
-        stacks.getLast().push(r);
-    }
-
-    private boolean canEvalulate() {
-        return stacks.getLast().sizeNum() >= 2 && stacks.getLast().sizeOp() >= 1;
     }
 
     private int parseNumber() {
@@ -143,17 +128,19 @@ class Parser {
     }
 
     private void advance() {
-        if (isEof()) return;
+        if (isEof())
+            return;
         index++;
     }
 
     private char current() {
-        if (isEof()) throw new IllegalStateException("current called on EOF");
+        if (isEof())
+            throw new IllegalStateException("current called on EOF");
         return source.charAt(index);
     }
 
     private void skipWhitespace() {
-        while(!isEof() && current() == ' ') {
+        while (!isEof() && current() == ' ') {
             index++;
         }
     }
@@ -165,9 +152,8 @@ class Parser {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-
         int indent = 0;
-        for (Stack stack : stacks.reversed()) {
+        for (EvalStack stack : stacks.reversed()) {
             for (String line : stack.toString().split("\n")) {
                 sb.repeat(' ', indent).append(line).append("\n");
             }
@@ -180,8 +166,6 @@ class Parser {
 
 class Day18 {
 
-    private static final String simple = "((2 + 4 * 9) * (6 + 9 * 8 + 6) + 6) + 2 + 4 * 2";
-
     static void main(String[] args) {
         if (args.length < 1) {
             System.err.printf("Usage: java %s <input>%n", Day18.class.getSimpleName());
@@ -189,12 +173,25 @@ class Day18 {
         }
 
         String filename = args[0];
-        try (Stream<String> lines = Files.lines(Path.of(filename))) {
-            Common.time("Part1", () -> {
-                return lines
-                        .mapToLong(line -> new Parser(line).evaluate())
-                        .sum();
-            });
+        Path filepath = Path.of(filename);
+        try (Stream<String> lines = Files.lines(filepath)) {
+            Common.time("Part1", () -> lines
+                    .mapToLong(line -> new ImParser(line).evaluate())
+                    .sum());
+        } catch (IOException e) {
+            System.err.println(e.getMessage());
+            System.exit(1);
+        }
+
+        try (Stream<String> lines = Files.lines(filepath)) {
+            Common.time("Part2", () -> lines
+                    .mapToLong(line -> {
+                        List<Token> tokens = new Lexer(line).tokenize();
+                        Parser parser = new Parser(tokens);
+                        Expr expr = parser.parseExpr();
+                        return expr.eval();
+                    })
+                    .sum());
         } catch (IOException e) {
             System.err.println(e.getMessage());
             System.exit(1);
