@@ -6,9 +6,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import common.Common;
 
@@ -22,12 +25,7 @@ record Sequence(List<Integer> sequence) implements Rule {
     }
 }
 
-record Alternative(List<Integer> s1, List<Integer> s2) implements Rule {
-    public Alternative {
-        s1 = List.copyOf(s1);
-        s2 = List.copyOf(s2);
-    }
-}
+record Alternative(List<List<Integer>> sequences) implements Rule { }
 
 class Day19 {
 
@@ -44,16 +42,16 @@ class Day19 {
             } else if (lineParts[1].contains("|")) {
                 String[] parts = lineParts[1].split(" \\| ");
                 List<Integer> s1 = Arrays.stream(parts[0].split(" "))
-                    .map(Integer::parseInt)
-                    .toList();
+                .map(Integer::parseInt)
+                .toList();
                 List<Integer> s2 = Arrays.stream(parts[1].split(" "))
-                    .map(Integer::parseInt)
-                    .toList();
-                rule = new Alternative(s1, s2);
+                .map(Integer::parseInt)
+                .toList();
+                rule = new Alternative(List.of(s1, s2));
             } else {
                 List<Integer> s = Arrays.stream(lineParts[1].split(" "))
-                    .map(Integer::parseInt)
-                    .toList();
+                .map(Integer::parseInt)
+                .toList();
                 rule = new Sequence(s);
             }
             rules.put(id, rule);
@@ -71,42 +69,56 @@ class Day19 {
         return messages;
     }
 
-    private static String isValidMessage(Map<Integer, Rule> rules, String msg, int ruleId) {
+    private static Set<String> isValidMessage(Map<Integer, Rule> rules, String msg, int ruleId) {
         return switch (rules.get(ruleId)) {
-            case Literal l -> (!msg.isEmpty() && msg.charAt(0) == l.c()) ? msg.substring(1) : null;
-            case Sequence s -> {
-                for (Integer id : s.sequence()) {
-                    String newMsg = isValidMessage(rules, msg, id);
-                    if (newMsg == null) yield null;
-                    msg = newMsg;
+
+            case Literal l -> {
+                if (!msg.isEmpty() && msg.charAt(0) == l.c()) {
+                    yield Set.of(msg.substring(1));
                 }
-                yield msg;
+                yield Set.of();
             }
+
+            case Sequence s -> {
+                Set<String> current = Set.of(msg);
+
+                for (Integer id : s.sequence()) {
+                    Set<String> next = new HashSet<>();
+
+                    for (String m : current) {
+                        next.addAll(isValidMessage(rules, m, id));
+                    }
+
+                    current = next;
+
+                    if (current.isEmpty()) break;
+                }
+
+                yield current;
+            }
+
             case Alternative a -> {
-                boolean foundOne = true;
-                String tryOne = msg;
-                for (Integer id : a.s1()) {
-                    tryOne = isValidMessage(rules, tryOne, id);
-                    if (tryOne == null) {
-                        foundOne = false;
-                        break;
+                Set<String> result = new HashSet<>();
+
+                for (List<Integer> seq : a.sequences()) {
+                    Set<String> current = Set.of(msg);
+
+                    for (Integer id : seq) {
+                        Set<String> next = new HashSet<>();
+
+                        for (String m : current) {
+                            next.addAll(isValidMessage(rules, m, id));
+                        }
+
+                        current = next;
+
+                        if (current.isEmpty()) break;
                     }
+
+                    result.addAll(current);
                 }
 
-                if (foundOne) yield tryOne;
-
-                boolean foundTwo = true;
-                String tryTwo = msg;
-                for (Integer id : a.s2()) {
-                    tryTwo = isValidMessage(rules, tryTwo, id);
-                    if (tryTwo == null) {
-                        foundTwo = false;
-                        break;
-                    }
-                }
-
-                if (foundTwo) yield tryTwo;
-                yield null;
+                yield result;
             }
         };
     }
@@ -123,12 +135,37 @@ class Day19 {
             List<String> messages = parseMessages(reader);
 
             Common.time("Part1", () -> messages.stream()
-                    .filter(msg -> {
-                        String result = isValidMessage(rules, msg, 0);
-                        return result != null && result.isEmpty();
-                    })
-                    .count()
+                .filter(msg -> isValidMessage(rules, msg, 0).contains(""))
+                .count()
             );
+
+            Common.time("Part2", () -> {
+                List<List<Integer>> rule8 = new ArrayList<>();
+                List<List<Integer>> rule11 = new ArrayList<>();
+
+                long last = 0;
+                long current = 1;
+
+                for (int i = 1; last != current; ++i) {
+                    last = current;
+                    rule8.add(Collections.nCopies(i, 42));
+                    rules.put(8, new Alternative(rule8));
+
+                    List<Integer> combined = new ArrayList<>();
+                    combined.addAll(Collections.nCopies(i, 42));
+                    combined.addAll(Collections.nCopies(i, 31));
+                    rule11.add(combined);
+
+                    rules.put(8, new Alternative(rule8));
+                    rules.put(11, new Alternative(rule11));
+
+                    current = messages.stream()
+                    .filter(msg -> isValidMessage(rules, msg, 0).contains(""))
+                    .count();
+                }
+
+                return current;
+            });
         } catch (IOException e) {
             System.err.printf("ERROR: reading file '%s': %s%n", filename, e.getMessage());
             System.exit(1);
