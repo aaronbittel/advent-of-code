@@ -42,74 +42,59 @@ class Day21 {
         return new Meal(ingredients, allergens);
     }
 
-    private static boolean isValid(List<Meal> meals, Map<String, String> ingredientToAllergen) {
-        Map<String, String> allergenToIngredient = HashMap.newHashMap(ingredientToAllergen.size());
-        for (Map.Entry<String, String> entry : ingredientToAllergen.entrySet()) {
-            allergenToIngredient.put(entry.getValue(), entry.getKey());
-        }
+    private static Map<String, Set<String>> candidatesByAllergen(List<Meal> meals) {
+        Map<String, Set<String>> candidatesByAllergen = new HashMap<>();
 
-        for (Meal meal : meals) {
-            // count free ingredients < count free allergens
-            int freeIngredientCount = 0;
-            for (String ingredient : meal.ingredients()) {
-                if (!ingredientToAllergen.containsKey(ingredient)) freeIngredientCount++;
-            }
-            int freeAllergenCount = 0;
-            for (String allergen : meal.allergens()) {
-                if (!allergenToIngredient.containsKey(allergen)) freeAllergenCount++;
-            }
-            if (freeIngredientCount < freeAllergenCount) return false;
-        }
-
-        // ingredient matches allergen, but ingredient not present in meal
         for (Meal meal : meals) {
             for (String allergen : meal.allergens()) {
-                if (!allergenToIngredient.containsKey(allergen)) continue;
-                String ingredient = allergenToIngredient.get(allergen);
-                if (!meal.ingredients().contains(ingredient)) return false;
-            }
-        }
-
-        return true;
-    }
-
-    private static boolean backtrack(List<Meal> meals, Map<String, String> ingredientToAllergen) {
-        // 2. check if valid
-        // 3. if yes -> continue 1.
-        if (!isValid(meals, ingredientToAllergen)) return false;
-        Set<String> uniqueAllergens = new HashSet<>();
-        for (Meal meal : meals) {
-            for (String allergen : meal.allergens()) {
-                uniqueAllergens.add(allergen);
-            }
-        }
-        if (ingredientToAllergen.size() == uniqueAllergens.size()) return true;
-
-        // 1. choose next solution
-        for (Meal meal : meals) {
-            for (String ingredient : meal.ingredients()) {
-                if (ingredientToAllergen.containsKey(ingredient)) continue;
-                for (String allergen : meal.allergens()) {
-                    if (ingredientToAllergen.containsValue(allergen)) continue;
-                    ingredientToAllergen.put(ingredient, allergen);
-                    if (backtrack(meals, ingredientToAllergen)) return true;
-                    // 4. if no -> revert change
-                    ingredientToAllergen.remove(ingredient);
+                if (!candidatesByAllergen.containsKey(allergen)) {
+                    candidatesByAllergen.put(allergen, new HashSet<String>(meal.ingredients()));
+                } else {
+                    candidatesByAllergen.get(allergen).retainAll(meal.ingredients());
                 }
             }
         }
 
-        return true;
+        return candidatesByAllergen;
     }
 
     private static int solvePart1(List<Meal> meals) {
-        Map<String, String> ingredientToAllergen = new HashMap<>();
-        backtrack(meals, ingredientToAllergen);
+        Map<String, Set<String>> candidatesByAllergen = candidatesByAllergen(meals);
+
+        Set<String> resolvedIngredients = new HashSet<>();
+
+        while (true) {
+            for (Set<String> candidates : candidatesByAllergen.values()) {
+                if (candidates.size() == 1) {
+                    resolvedIngredients.addAll(candidates);
+                }
+            }
+
+            for (Set<String> candidate : candidatesByAllergen.values()) {
+                if (candidate.size() == 1) continue;
+                candidate.removeAll(resolvedIngredients);
+            }
+
+            boolean allResolved = true;
+            for (Set<String> candidate : candidatesByAllergen.values()) {
+                if (candidate.size() > 1) {
+                    allResolved = false;
+                    break;
+                }
+            }
+
+            if (allResolved) break;
+        }
+
+        Set<String> allergenic = new HashSet<>();
+        for (Set<String> ingredientSet : candidatesByAllergen.values()) {
+            allergenic.addAll(ingredientSet);
+        }
 
         int result = 0;
         for (Meal meal : meals) {
             for (String ingredient : meal.ingredients()) {
-                if (!ingredientToAllergen.containsKey(ingredient)) result++;
+                if (!allergenic.contains(ingredient)) result++;
             }
         }
         return result;
