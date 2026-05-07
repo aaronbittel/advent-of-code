@@ -9,6 +9,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import common.Common;
@@ -48,7 +49,7 @@ class Day21 {
         for (Meal meal : meals) {
             for (String allergen : meal.allergens()) {
                 if (!candidatesByAllergen.containsKey(allergen)) {
-                    candidatesByAllergen.put(allergen, new HashSet<String>(meal.ingredients()));
+                    candidatesByAllergen.put(allergen, new HashSet<>(meal.ingredients()));
                 } else {
                     candidatesByAllergen.get(allergen).retainAll(meal.ingredients());
                 }
@@ -58,8 +59,8 @@ class Day21 {
         return candidatesByAllergen;
     }
 
-    private static int solvePart1(List<Meal> meals) {
-        Map<String, Set<String>> candidatesByAllergen = candidatesByAllergen(meals);
+	private static Map<String, String> getAllergenToIngredient(List<Meal> meals) {
+		Map<String, Set<String>> candidatesByAllergen = candidatesByAllergen(meals);
 
         Set<String> resolvedIngredients = new HashSet<>();
 
@@ -82,22 +83,40 @@ class Day21 {
                     break;
                 }
             }
-
             if (allResolved) break;
         }
 
-        Set<String> allergenic = new HashSet<>();
-        for (Set<String> ingredientSet : candidatesByAllergen.values()) {
-            allergenic.addAll(ingredientSet);
+        Map<String, String> allergenToIngredient = HashMap.newHashMap(candidatesByAllergen.size());
+
+        for (Map.Entry<String, Set<String>> entry : candidatesByAllergen.entrySet()) {
+            if (entry.getValue().size() != 1) throw new IllegalStateException("something went wrong");
+            allergenToIngredient.put(
+                entry.getKey(),
+                entry.getValue().iterator().next());
         }
+
+        return allergenToIngredient;
+	}
+
+    private static int solvePart1(
+        List<Meal> meals,
+        Map<String, String> allergenToIngredient
+    ) {
 
         int result = 0;
         for (Meal meal : meals) {
             for (String ingredient : meal.ingredients()) {
-                if (!allergenic.contains(ingredient)) result++;
+                if (!allergenToIngredient.containsValue(ingredient)) result++;
             }
         }
         return result;
+    }
+
+    private static String solvePart2(Map<String, String> allergenToIngredient) {
+        return allergenToIngredient.entrySet().stream()
+            .sorted(Map.Entry.comparingByKey())
+            .map(Map.Entry::getValue)
+            .collect(Collectors.joining(","));
     }
 
     static void main(String[] args) {
@@ -110,7 +129,11 @@ class Day21 {
         try {
             List<Meal> meals = parse(filename);
 
-            Common.time("Part1", () -> solvePart1(meals));
+            Map<String, String> allergenToIngredient = Common.timeParsing(() ->
+                getAllergenToIngredient(meals));
+
+            Common.time("Part1", () -> solvePart1(meals, allergenToIngredient));
+            Common.time("Part2", () -> solvePart2(allergenToIngredient));
         } catch (IOException e) {
             System.err.printf("ERROR: reading file '%s': %s%n", filename, e.getMessage());
             System.exit(1);
