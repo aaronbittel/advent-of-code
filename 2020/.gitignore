@@ -2,3 +2,7 @@
 .idea/
 2020.iml
 out/
+junit-platform-console-standalone-6.0.3.jar
+assertj-core-3.27.7.jar
+test.sh
+**/*Test.java
