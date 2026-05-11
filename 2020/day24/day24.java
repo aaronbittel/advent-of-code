@@ -97,6 +97,53 @@ class Day24 {
         return flippedTiles.size();
     }
 
+    private static int solvePart2(List<List<HexDirection>> tilePaths) {
+        Set<Position> flippedTiles = new HashSet<>();
+        for (List<HexDirection> path : tilePaths) {
+            int x = 0;
+            int y = 0;
+            for (HexDirection dir : path) {
+                x += dir.x();
+                y += dir.y();
+            }
+            Position pos = new Position(x, y);
+            if (!flippedTiles.add(pos)) {
+                flippedTiles.remove(pos);
+            }
+        }
+
+        for (int i = 0; i < 100; ++i) {
+            Set<Position> nextDay = new HashSet<>();
+
+            for (Position pos : flippedTiles) {
+                int count = 0;
+                for (HexDirection dir : HexDirection.values()) {
+                    int nx = pos.x() + dir.x();
+                    int ny = pos.y() + dir.y();
+                    if (flippedTiles.contains(new Position(nx, ny))) count++;
+                }
+
+                if (count == 1 || count == 2) nextDay.add(pos);
+
+                for (HexDirection dir : HexDirection.values()) {
+                    int nx = pos.x() + dir.x();
+                    int ny = pos.y() + dir.y();
+                    Position neighborPosition = new Position(nx, ny);
+                    if (flippedTiles.contains(neighborPosition)) continue;
+                    int countFlipped = 0;
+                    for (HexDirection d : HexDirection.values()) {
+                        if (flippedTiles.contains(new Position(nx + d.x(), ny + d.y()))) countFlipped++;
+                    }
+                    if (countFlipped == 2) nextDay.add(neighborPosition);
+                }
+            }
+
+            flippedTiles = nextDay;
+        }
+
+        return flippedTiles.size();
+    }
+
     static void main(String[] args) {
         if (args.length < 1) {
             System.err.printf("Usage: java %s <input>%n", Day24.class.getSimpleName());
@@ -108,6 +155,7 @@ class Day24 {
             List<List<HexDirection>> tilePaths = parse(filename);
 
             Common.time("Part1", () -> solvePart1(tilePaths));
+            Common.time("Part2", () -> solvePart2(tilePaths));
         } catch (IOException e) {
             System.err.printf("ERROR: reading file '%s': %s%n", filename, e.getMessage());
             System.exit(1);
