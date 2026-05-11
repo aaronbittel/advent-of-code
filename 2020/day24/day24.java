@@ -5,12 +5,69 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
 import common.Common;
 
 record Position(int x, int y) { }
+
+class FlippedTileSet implements Iterable<Position> {
+    private final Set<Position> tiles;
+
+    public FlippedTileSet() {
+        this(new HashSet<>());
+    }
+
+    private FlippedTileSet(Set<Position> tiles) {
+        this.tiles = new HashSet<>(tiles);
+    }
+
+    public static FlippedTileSet of(List<List<HexDirection>> tilePaths) {
+        Set<Position> flippedTiles = new HashSet<>();
+        for (List<HexDirection> path : tilePaths) {
+            int x = 0;
+            int y = 0;
+            for (HexDirection dir : path) {
+                x += dir.x();
+                y += dir.y();
+            }
+            Position pos = new Position(x, y);
+            if (!flippedTiles.add(pos)) {
+                flippedTiles.remove(pos);
+            }
+        }
+        return new FlippedTileSet(flippedTiles);
+    }
+
+	public int countFlippedNeighbors(Position pos) {
+		int count = 0;
+		for (HexDirection dir : HexDirection.values()) {
+		    int nx = pos.x() + dir.x();
+		    int ny = pos.y() + dir.y();
+		    if (tiles.contains(new Position(nx, ny))) count++;
+		}
+		return count;
+	}
+
+    public int size() {
+        return tiles.size();
+    }
+
+    public boolean add(Position pos) {
+        return tiles.add(pos);
+    }
+
+    public boolean contains(Position pos) {
+        return tiles.contains(pos);
+    }
+
+    @Override
+    public Iterator<Position> iterator() {
+        return tiles.iterator();
+    }
+}
 
 enum HexDirection {
     EAST(1, 0),
@@ -80,60 +137,22 @@ class Day24 {
         return dirs;
     }
 
-    private static int solvePart1(List<List<HexDirection>> tilePaths) {
-        Set<Position> flippedTiles = new HashSet<>();
-        for (List<HexDirection> path : tilePaths) {
-            int x = 0;
-            int y = 0;
-            for (HexDirection dir : path) {
-                x += dir.x();
-                y += dir.y();
-            }
-            Position pos = new Position(x, y);
-            if (!flippedTiles.add(pos)) {
-                flippedTiles.remove(pos);
-            }
-        }
-        return flippedTiles.size();
-    }
-
-    private static int solvePart2(List<List<HexDirection>> tilePaths) {
-        Set<Position> flippedTiles = new HashSet<>();
-        for (List<HexDirection> path : tilePaths) {
-            int x = 0;
-            int y = 0;
-            for (HexDirection dir : path) {
-                x += dir.x();
-                y += dir.y();
-            }
-            Position pos = new Position(x, y);
-            if (!flippedTiles.add(pos)) {
-                flippedTiles.remove(pos);
-            }
-        }
-
+    private static int solvePart2(FlippedTileSet flippedTiles) {
         for (int i = 0; i < 100; ++i) {
-            Set<Position> nextDay = new HashSet<>();
+            FlippedTileSet nextDay = new FlippedTileSet();
 
             for (Position pos : flippedTiles) {
-                int count = 0;
-                for (HexDirection dir : HexDirection.values()) {
-                    int nx = pos.x() + dir.x();
-                    int ny = pos.y() + dir.y();
-                    if (flippedTiles.contains(new Position(nx, ny))) count++;
-                }
-
+                int count = flippedTiles.countFlippedNeighbors(pos);
                 if (count == 1 || count == 2) nextDay.add(pos);
 
                 for (HexDirection dir : HexDirection.values()) {
-                    int nx = pos.x() + dir.x();
-                    int ny = pos.y() + dir.y();
-                    Position neighborPosition = new Position(nx, ny);
+                    Position neighborPosition = new Position(
+                        pos.x() + dir.x(),
+                        pos.y() + dir.y()
+                    );
                     if (flippedTiles.contains(neighborPosition)) continue;
-                    int countFlipped = 0;
-                    for (HexDirection d : HexDirection.values()) {
-                        if (flippedTiles.contains(new Position(nx + d.x(), ny + d.y()))) countFlipped++;
-                    }
+
+                    int countFlipped = flippedTiles.countFlippedNeighbors(neighborPosition);
                     if (countFlipped == 2) nextDay.add(neighborPosition);
                 }
             }
@@ -153,9 +172,10 @@ class Day24 {
         String filename = args[0];
         try {
             List<List<HexDirection>> tilePaths = parse(filename);
+            FlippedTileSet grid = Common.timeParsing(() -> FlippedTileSet.of(tilePaths));
 
-            Common.time("Part1", () -> solvePart1(tilePaths));
-            Common.time("Part2", () -> solvePart2(tilePaths));
+            Common.time("Part1", () -> grid.size());
+            Common.time("Part2", () -> solvePart2(grid));
         } catch (IOException e) {
             System.err.printf("ERROR: reading file '%s': %s%n", filename, e.getMessage());
             System.exit(1);
